@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Kindness Chain API for Osvaldo's portfolio. A DynamoDB table, a Lambda function
+  and an API Gateway HTTP API with CORS and throttling.
+
+Parameters:
+  AllowedOrigin:
+    Type: String
+    Default: "*"
+    Description: >
+      Website allowed to call the API. Leave "*" while testing, then set it to your
+      Amplify URL (for example https://main.d123abc.amplifyapp.com) and update the stack.
+
+Resources:
+  ChainTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: KindnessChain
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  ChainFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: KindnessChainTableAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                  - dynamodb:PutItem
+                Resource: !GetAtt ChainTable.Arn
+
+  ChainFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Reads and adds links on the kindness chain
+      Runtime: nodejs22.x
+      Handler: index.handler
+      MemorySize: 256
+      Timeout: 10
+      Role: !GetAtt ChainFunctionRole.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ChainTable
+          SALT: !Ref AWS::StackId
+      Code:
+        ZipFile: |
+__LAMBDA_CODE__
+
+  ChainFunctionLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ChainFunction}"
+      RetentionInDays: 14
+
+  ChainApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: kindness-chain-api
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - content-type
+        MaxAge: 3600
+
+  ChainIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ChainApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ChainFunction.Arn
+      PayloadFormatVersion: "2.0"
+
+  GetLinksRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ChainApi
+      RouteKey: GET /links
+      Target: !Sub "integrations/${ChainIntegration}"
+
+  PostLinkRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ChainApi
+      RouteKey: POST /links
+      Target: !Sub "integrations/${ChainIntegration}"
+
+  ChainStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref ChainApi
+      StageName: $default
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 20
+        ThrottlingRateLimit: 10
+
+  ApiInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ChainFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ChainApi}/*/*/links"
+
+Outputs:
+  ApiUrl:
+    Description: Paste this into config.js as CHAIN_API_URL
+    Value: !Sub "https://${ChainApi}.execute-api.${AWS::Region}.amazonaws.com"
+  TableName:
+    Description: Open this table in the DynamoDB console to remove links
+    Value: !Ref ChainTable

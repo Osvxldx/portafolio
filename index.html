@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>You matter | Osvaldo Casimiro</title>
+  <meta name="description" content="Osvaldo Casimiro Zamora, IT and Digital Innovation Engineering student and AWS Student Builder Group Leader, learning AI, data and cloud. Add your link to the kindness chain.">
+  <meta name="theme-color" content="#FFF4EE" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121638" media="(prefers-color-scheme: dark)">
+  <meta property="og:title" content="Osvaldo Casimiro · You matter">
+  <meta property="og:description" content="AI and data student, AWS Student Builder Group Leader. Come add your link to the kindness chain.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+
+  <!-- Set the theme before paint so there is no flash -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        var theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+      document.documentElement.classList.add('js');
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div class="scroll-progress" aria-hidden="true"><span></span></div>
+  <canvas class="motes" aria-hidden="true"></canvas>
+  <canvas class="sparks" aria-hidden="true"></canvas>
+  <div class="cursor" aria-hidden="true"><span class="cursor-dot"></span><span class="cursor-ring"></span></div>
+
+  <header class="site-header">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="#top" aria-label="Osvaldo, back to top">
+        <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>
+        Osvaldo
+      </a>
+      <ul class="nav-links">
+        <li><a href="#about">About</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#journey">Journey</a></li>
+        <li><a class="nav-cta" href="#your-turn">Your turn</a></li>
+      </ul>
+      <button class="theme-toggle" type="button" aria-label="Switch to night mode" aria-pressed="false">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <mask id="moon-mask">
+            <rect width="32" height="32" fill="#fff"/>
+            <circle class="moon-bite" cx="30" cy="4" r="8" fill="#000"/>
+          </mask>
+          <circle class="sun-core" cx="16" cy="16" r="7" mask="url(#moon-mask)"/>
+          <g class="sun-rays">
+            <line x1="16" y1="2" x2="16" y2="5"/><line x1="16" y1="27" x2="16" y2="30"/>
+            <line x1="2" y1="16" x2="5" y2="16"/><line x1="27" y1="16" x2="30" y2="16"/>
+            <line x1="6.1" y1="6.1" x2="8.2" y2="8.2"/><line x1="23.8" y1="23.8" x2="25.9" y2="25.9"/>
+            <line x1="6.1" y1="25.9" x2="8.2" y2="23.8"/><line x1="23.8" y1="8.2" x2="25.9" y2="6.1"/>
+          </g>
+        </svg>
+      </button>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-sky" aria-hidden="true"></div>
+      <div class="hero-sun" aria-hidden="true"><div class="hero-sun-glow"></div><div class="hero-sun-disc"></div></div>
+      <div class="hero-horizon" aria-hidden="true"></div>
+
+      <div class="hero-inner">
+        <p class="hero-hi">Hi, I'm Osvaldo.</p>
+        <h1 class="hero-title" id="hero-title" aria-label="You matter.">
+          <span class="line" aria-hidden="true">You</span>
+          <span class="line" aria-hidden="true">matter.</span>
+        </h1>
+        <p class="hero-sub">
+          I study IT &amp; Digital Innovation Engineering in Mexico, I'm an AWS Student Builder Group Leader,
+          and I'm learning AI, data and cloud one kind step at a time.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#projects">See my work</a>
+          <a class="btn btn-ghost" href="#your-turn">Add your link to the chain</a>
+        </div>
+        <p class="hero-counter" aria-live="polite">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span><strong class="chain-count" data-count="1">1</strong> <span class="chain-count-label">kind action</span> and counting</span>
+        </p>
+      </div>
+
+      <a class="hero-hint" href="#your-turn">
+        <span class="hand">psst&hellip; there's a kindness chain at the end. Add your link</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15m0 0-6-6m6 6 6-6"/></svg>
+      </a>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="section about" id="about" aria-labelledby="about-title">
+      <div class="wrap about-grid">
+        <div class="about-avatar reveal" aria-hidden="true">
+          <svg viewBox="0 0 200 200" class="avatar">
+            <defs>
+              <radialGradient id="av-sun" cx="40%" cy="35%" r="70%">
+                <stop offset="0" class="av-stop-1"/>
+                <stop offset="1" class="av-stop-2"/>
+              </radialGradient>
+              <mask id="av-moon">
+                <rect width="200" height="200" fill="#fff"/>
+                <circle class="av-bite" cx="190" cy="40" r="62" fill="#000"/>
+              </mask>
+            </defs>
+            <g class="av-rays">
+              <path d="M100 8v20M100 172v20M8 100h20M172 100h20M35 35l14 14M151 151l14 14M35 165l14-14M151 49l14-14"/>
+            </g>
+            <circle cx="100" cy="100" r="62" fill="url(#av-sun)" mask="url(#av-moon)"/>
+            <text x="100" y="114" text-anchor="middle" class="av-initials">OC</text>
+          </svg>
+        </div>
+        <div class="about-copy">
+          <h2 class="section-title reveal" id="about-title">About me</h2>
+          <p class="lead reveal">
+            I'm Osvaldo, an IT &amp; Digital Innovation Engineering student at Universidad Tecnológica de Tecamachalco in Mexico.
+            I'm curious by nature, and I love anything that mixes artificial intelligence, mathematics and philosophy.
+          </p>
+          <p class="reveal">
+            Right now I'm building strong foundations in MLOps, AI and cloud with AWS, and in data science with IBM.
+            I was just accepted as an AWS Student Builder Group Leader, so I get to help other students start building too.
+          </p>
+          <p class="reveal">
+            And every day I keep working on my most important project: being a good person.
+          </p>
+          <p class="note hand reveal">I'm happiest when I'm listening to someone, learning something new, or both.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SKILLS -->
+    <section class="section skills" id="skills" aria-labelledby="skills-title">
+      <div class="wrap">
+        <h2 class="section-title reveal" id="skills-title">My tech superpower is <span class="nowrap">AI &amp; data</span></h2>
+        <p class="section-intro reveal">
+          I like turning messy data into something people can understand and use. These are the tools I work with and the ones I'm learning right now.
+        </p>
+        <div class="skill-groups">
+          <div class="skill-group reveal">
+            <h3>Data &amp; AI</h3>
+            <ul class="pills">
+              <li>Python</li><li>SQL</li><li>Machine learning</li><li>MLOps</li><li>Data science</li><li>AI agents with Kiro</li>
+            </ul>
+          </div>
+          <div class="skill-group reveal">
+            <h3>Cloud &amp; platforms</h3>
+            <ul class="pills">
+              <li>AWS fundamentals</li><li>Salesforce Agentforce</li><li>Apex &amp; Flows</li><li>SAP Analytics Cloud</li><li>Git &amp; GitHub</li>
+            </ul>
+          </div>
+          <div class="skill-group reveal">
+            <h3>People</h3>
+            <ul class="pills">
+              <li>Positive attitude</li><li>Communication &amp; empathy</li><li>Fast learner</li><li>English B2</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROJECTS -->
+    <section class="section projects" id="projects" aria-labelledby="projects-title">
+      <div class="wrap">
+        <h2 class="section-title reveal" id="projects-title">Things I've built</h2>
+
+        <article class="project project-featured reveal tilt">
+          <div class="project-meta">
+            <p class="project-badge">Top 20 of 111 teams</p>
+            <p class="project-context">Agentic AI Hackathon 2026, Salesforce</p>
+          </div>
+          <h3>Prometheus, an AI sales agent</h3>
+          <p>
+            Sales executives at a financial firm were spending most of their day on admin work. Prometheus is an agent inside Salesforce
+            that they talk to in plain language: it lists today's follow-ups, updates deals, builds the quarterly forecast and recommends
+            products using company knowledge articles. Every action it takes is logged so people can see what changed and why.
+          </p>
+          <p class="project-role"><strong>Stack:</strong> Agentforce, Flows, RAG with Knowledge, Apex, Lightning Web Components. Scored 82.1 out of 100.</p>
+          <a class="text-link" href="https://github.com/Osvxldx/prometheus-finpulse-salesforce" target="_blank" rel="noopener">View the code on GitHub</a>
+        </article>
+
+        <div class="project-pair">
+          <article class="project reveal tilt">
+            <p class="project-context">Freelance project</p>
+            <h3>Water utility management system</h3>
+            <p>
+              A desktop app for a community water committee. It keeps track of households, monthly payments and extra charges,
+              and prints clear receipts, replacing a pile of spreadsheets.
+            </p>
+            <p class="project-role"><strong>Stack:</strong> Python, desktop GUI, SQLite.</p>
+            <a class="text-link" href="https://github.com/Osvxldx/aguaPotable" target="_blank" rel="noopener">View the code on GitHub</a>
+          </article>
+
+          <article class="project reveal tilt">
+            <p class="project-context">AWS Student Builder Challenge</p>
+            <h3>This portfolio and its kindness chain</h3>
+            <p>
+              A hand-built site with a live, shared chain of kind actions. Visitors add a link and everyone sees it.
+              Free text is filtered before it is saved.
+            </p>
+            <p class="project-role"><strong>Stack:</strong> HTML, CSS, JavaScript, AWS Amplify, API Gateway, Lambda, DynamoDB.</p>
+            <a class="text-link" href="https://github.com/Osvxldx/portafolio" target="_blank" rel="noopener">View the code on GitHub</a>
+          </article>
+        </div>
+
+        <h3 class="subhead reveal">Learning I'm proud of</h3>
+        <ul class="highlights">
+          <li class="reveal">
+            <strong>Data science, The University of Tokyo.</strong>
+            Completed GCI World 2026 at the Matsuo-Iwasawa Lab and passed the final assessment.
+          </li>
+          <li class="reveal">
+            <strong>Agent-based software bootcamp with Kiro.</strong>
+            Twelve weeks of building software with AI agents at Código Facilito.
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- JOURNEY -->
+    <section class="journey" id="journey" aria-labelledby="journey-title">
+      <div class="journey-stars" aria-hidden="true"></div>
+      <div class="wrap journey-wrap">
+        <header class="journey-head">
+          <h2 class="section-title" id="journey-title">My journey</h2>
+          <p class="section-intro">Two years ago I didn't know anything about tech. This is how the light came in.</p>
+        </header>
+
+        <div class="journey-track">
+          <svg class="journey-line" aria-hidden="true" preserveAspectRatio="none"><path class="journey-path-bg"/><path class="journey-path"/></svg>
+
+          <ol class="milestones">
+            <li class="year" aria-hidden="true"><span>2024</span></li>
+            <li class="milestone night">
+              <p class="m-date">September 2024</p>
+              <h3>Day one</h3>
+              <p>I started a degree in Multiplatform Software Development at Universidad Tecnológica de Tecamachalco, knowing nothing about technology.</p>
+            </li>
+
+            <li class="year" aria-hidden="true"><span>2025</span></li>
+            <li class="milestone night">
+              <p class="m-date">June 2025</p>
+              <h3>My first AI course</h3>
+              <p>ChatGPT Fundamentals with Santander Open Academy. Little by little, I started drifting toward data.</p>
+            </li>
+            <li class="milestone spark">
+              <p class="m-date">August 2025</p>
+              <h3>I found my passion</h3>
+              <p>Data science combines mathematics, communication, technology and philosophy, everything I love in one place. That's when I joined DataCamp: Introduction to Python, then Git in October and Intermediate SQL in November.</p>
+            </li>
+
+            <li class="year" aria-hidden="true"><span>2026</span></li>
+            <li class="milestone">
+              <p class="m-date">January 2026</p>
+              <h3>AI foundations</h3>
+              <p>Artificial Intelligence prep course from Tecnológico Nacional de México.</p>
+            </li>
+            <li class="milestone">
+              <p class="m-date">February 2026</p>
+              <h3>Introduction to AI Engineering</h3>
+              <p>Iberoamerican Technology Foundation, with support from the Salesforce Foundation.</p>
+            </li>
+            <li class="milestone">
+              <p class="m-date">March 2026</p>
+              <h3>Personal brand</h3>
+              <p>Learned to share my work in public with Santander Open Academy.</p>
+            </li>
+            <li class="milestone">
+              <p class="m-date">April 2026</p>
+              <h3>My first freelance project</h3>
+              <p>Built the water utility management system, and completed Exploring SAP Analytics Cloud.</p>
+            </li>
+            <li class="milestone">
+              <p class="m-date">June 2026</p>
+              <h3>English, level B2</h3>
+              <p>Certified high-intermediate English through the Bécalos English Challenge.</p>
+            </li>
+            <li class="milestone">
+              <p class="m-date">July 2026</p>
+              <h3>Building with AI agents</h3>
+              <p>Finished a twelve-week bootcamp on agent-based software development with Kiro.</p>
+            </li>
+            <li class="milestone">
+              <p class="m-date">August 2026</p>
+              <h3>The University of Tokyo</h3>
+              <p>Completed GCI World, a data science course from the Matsuo-Iwasawa Lab.</p>
+            </li>
+            <li class="milestone">
+              <p class="m-date">September 2026</p>
+              <h3>Engineering degree</h3>
+              <p>Finished my software degree and started IT &amp; Digital Innovation Engineering. Also learned project management and Agile.</p>
+            </li>
+            <li class="milestone">
+              <p class="m-date">October 2026</p>
+              <h3>Top 20 of 111</h3>
+              <p>Built Prometheus at the Salesforce Agentic AI Hackathon, and earned IBM SkillsBuild badges in AI Fundamentals, Data Classification and Data Usability.
+                <a class="text-link" href="https://www.credly.com/users/osvaldo-casimiro-zamora" target="_blank" rel="noopener">See my badges on Credly</a></p>
+            </li>
+            <li class="milestone now">
+              <p class="m-date">Now</p>
+              <h3>AWS Student Builder Group Leader</h3>
+              <p>I was just accepted into the program, and I'm building this portfolio for the AWS Student Builder Challenge.</p>
+              <p class="hand now-note">And I'm just getting started. Still learning, still grateful.</p>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- STORY -->
+    <section class="section story" id="story" aria-labelledby="story-title">
+      <div class="wrap story-wrap">
+        <h2 class="visually-hidden" id="story-title">The story behind my smile</h2>
+        <p class="hand story-hint reveal">People always tell me I'm positive. Want to know why?</p>
+        <button class="btn btn-story reveal" type="button" aria-expanded="false" aria-controls="story-body">
+          <svg class="smile" viewBox="0 0 48 24" aria-hidden="true"><path d="M4 6c6 12 34 12 40 0"/></svg>
+          The story behind my smile
+        </button>
+        <div class="story-body" id="story-body" hidden>
+          <p>There was a season in my life when everything felt heavy, and I felt like no one really understood me. Some days, simply keeping going was the hardest thing I did.</p>
+          <p>I made it through, and I'm deeply grateful for that. That's where my smile comes from. Not from never being sad, but from knowing how it feels to be unseen.</p>
+          <p>So now I try to be the person I needed back then: I listen, I share, and I help whenever I can. Every day is my way of saying thank you to life.</p>
+          <p class="story-close">That's why I believe it with my whole heart: you matter.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- YOUR TURN / CHAIN -->
+    <section class="section your-turn" id="your-turn" aria-labelledby="turn-title">
+      <div class="wrap">
+        <p class="hand turn-kicker reveal">I've talked a lot about me.</p>
+        <h2 class="turn-title reveal" id="turn-title">Your turn.</h2>
+        <p class="section-intro reveal">
+          Add a link to the kindness chain: one small, good thing you'll do today. Every link is the same size, because everyone matters the same.
+        </p>
+
+        <form class="chain-form reveal" novalidate>
+          <div class="field">
+            <label for="chain-name">Your first name</label>
+            <input id="chain-name" name="name" type="text" maxlength="30" autocomplete="given-name" required placeholder="e.g. Ana">
+          </div>
+
+          <fieldset class="field">
+            <legend>Today I will&hellip;</legend>
+            <div class="actions-grid">
+              <label class="action-chip"><input type="radio" name="action" value="thank" checked><span>Thank someone who helped me</span></label>
+              <label class="action-chip"><input type="radio" name="action" value="listen"><span>Listen to someone without judging</span></label>
+              <label class="action-chip"><input type="radio" name="action" value="message"><span>Send a kind message to a friend</span></label>
+              <label class="action-chip"><input type="radio" name="action" value="help"><span>Help a classmate or coworker</span></label>
+              <label class="action-chip"><input type="radio" name="action" value="smile"><span>Smile at a stranger</span></label>
+              <label class="action-chip"><input type="radio" name="action" value="matter"><span>Tell someone they matter</span></label>
+              <label class="action-chip action-own"><input type="radio" name="action" value="custom"><span>Write my own</span></label>
+            </div>
+          </fieldset>
+
+          <div class="field custom-field" hidden>
+            <label for="chain-custom">Your kind action</label>
+            <input id="chain-custom" name="custom" type="text" maxlength="80" placeholder="e.g. Cook dinner for my mom">
+            <p class="field-help"><span class="custom-count">0</span>/80 characters. Links aren't allowed.</p>
+          </div>
+
+          <div class="form-footer">
+            <button class="btn btn-primary" type="submit">Add my link</button>
+            <p class="form-status" role="status" aria-live="polite"></p>
+          </div>
+        </form>
+
+        <div class="chain-area">
+          <p class="chain-caption reveal"><span class="chain-count">1</span> <span class="chain-count-label">kind action</span> so far. Newest first.</p>
+          <ol class="chain" aria-label="Kindness chain"></ol>
+          <button class="btn btn-ghost chain-more" type="button" hidden>Show more links</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="contact">
+    <div class="wrap footer-inner">
+      <div>
+        <h2 class="footer-title">Let's connect</h2>
+        <p>I'd love to hear what you're building, or just how your day is going.</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/Osvxldx" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://www.linkedin.com/in/osvaldo-casimiro-zam/" target="_blank" rel="noopener">LinkedIn</a></li>
+        <li><a href="https://builder.aws.com/community/@osvxldx" target="_blank" rel="noopener">AWS Builder Center</a></li>
+        <li><a href="https://www.credly.com/users/osvaldo-casimiro-zamora" target="_blank" rel="noopener">Credly</a></li>
+      </ul>
+      <p class="footer-fine">Built with care by Osvaldo Casimiro Zamora. Hosted on AWS Amplify.</p>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" defer></script>
+  <script src="script.js" defer></script>
+</body>
+</html>

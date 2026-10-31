@@ -1,0 +1,8 @@
+# Local tooling and private notes (not part of the site)
+.claude/
+GUIA-DESPLIEGUE.md
+HACKATHON-SUBMISSION.md
+plan.md
+node_modules/
+.DS_Store
+Thumbs.db

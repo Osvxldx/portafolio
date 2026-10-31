@@ -1,0 +1,271 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Kindness Chain API for Osvaldo's portfolio. A DynamoDB table, a Lambda function
+  and an API Gateway HTTP API with CORS and throttling.
+
+Parameters:
+  AllowedOrigin:
+    Type: String
+    Default: "*"
+    Description: >
+      Website allowed to call the API. Leave "*" while testing, then set it to your
+      Amplify URL (for example https://main.d123abc.amplifyapp.com) and update the stack.
+
+Resources:
+  ChainTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: KindnessChain
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  ChainFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: KindnessChainTableAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                  - dynamodb:PutItem
+                Resource: !GetAtt ChainTable.Arn
+
+  ChainFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Reads and adds links on the kindness chain
+      Runtime: nodejs22.x
+      Handler: index.handler
+      MemorySize: 256
+      Timeout: 10
+      Role: !GetAtt ChainFunctionRole.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ChainTable
+          SALT: !Ref AWS::StackId
+      Code:
+        ZipFile: |
+          // Kindness Chain API: GET /links and POST /links (API Gateway HTTP API, payload v2)
+          const crypto = require("crypto");
+
+          const PRESETS = {
+            thank: "Thank someone who helped me",
+            listen: "Listen to someone without judging",
+            message: "Send a kind message to a friend",
+            help: "Help a classmate or coworker",
+            smile: "Smile at a stranger",
+            matter: "Tell someone they matter"
+          };
+          const WORDS = new Set(("puta puto putas putos putita putito puton culo culos pito pitos joto jotos zorra zorras perra perras pinche pinches mamada mamadas mamon mamona idiota idiotas imbecil imbeciles estupido estupida estupidos polla hdp ptm alv kys dick dicks cock cocks slut sluts whore whores retard retards nazi nazis ass pussy bastard bastards panocha ojete nalgas verga vergas marica maricas maricon maricones").split(" "));
+          const STEMS = "fuck shit bitch asshole cunt nigg fagg motherf pendej chinga chingu cabron culer mierd gilipoll putaz punet malparid hijodeput chingad".split(" ");
+          const SQUASHED = "fuck nigger pendejo pendeja chingada mierda hijodeputa killyourself motherfucker".split(" ");
+          const URLISH = /(https?:|www\.|\.(com|net|org|io|xyz|ru|mx|co|info|biz|me|ly|gg|app|dev|site|online|link)\b|@\w|\d{7,})/i;
+          const NAME_RE = /^[\p{L}][\p{L}\p{M} .'\-]{0,29}$/u;
+
+          const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+            .replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e").replace(/4/g, "a")
+            .replace(/5/g, "s").replace(/7/g, "t").replace(/@/g, "a").replace(/\$/g, "s");
+
+          function isRude(s) {
+            const n = norm(s);
+            for (const t of n.split(/[^a-z]+/)) {
+              if (!t) continue;
+              if (WORDS.has(t) || STEMS.some((x) => t.startsWith(x))) return true;
+            }
+            const sq = n.replace(/[^a-z]/g, "");
+            return SQUASHED.some((x) => sq.includes(x));
+          }
+
+          function validate(body) {
+            const name = String(body.name || "").trim().replace(/\s+/g, " ");
+            if (!NAME_RE.test(name) || isRude(name)) return { error: "Use your first name, letters only, up to 30 characters." };
+            if (body.actionId) {
+              if (!PRESETS[body.actionId]) return { error: "Pick one of the kind actions." };
+              return { name, text: PRESETS[body.actionId], type: "preset" };
+            }
+            const text = String(body.customText || "").trim().replace(/\s+/g, " ");
+            if (text.length < 3 || text.length > 80) return { error: "Write your kind action in 3 to 80 characters." };
+            if (URLISH.test(text)) return { error: "Links, emails and phone numbers can't go on the chain." };
+            if (isRude(text)) return { error: "Keep it kind, please. Try different words." };
+            return { name, text, type: "custom" };
+          }
+
+          const reply = (statusCode, data) => ({
+            statusCode,
+            headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+            body: JSON.stringify(data)
+          });
+
+          // DynamoDB access. Tests pass their own store with the same three methods.
+          function dynamoStore(table) {
+            const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+            const { DynamoDBDocumentClient, QueryCommand, PutCommand } = require("@aws-sdk/lib-dynamodb");
+            const db = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+            const visible = { FilterExpression: "#s = :v", ExpressionAttributeNames: { "#s": "status" } };
+            return {
+              async list(limit) {
+                const r = await db.send(new QueryCommand({ TableName: table, KeyConditionExpression: "pk = :p",
+                  ExpressionAttributeValues: { ":p": "CHAIN", ":v": "visible" }, ScanIndexForward: false, Limit: limit + 50, ...visible }));
+                return r.Items.slice(0, limit);
+              },
+              async count() {
+                let n = 0, key;
+                do {
+                  const r = await db.send(new QueryCommand({ TableName: table, KeyConditionExpression: "pk = :p", Select: "COUNT",
+                    ExpressionAttributeValues: { ":p": "CHAIN", ":v": "visible" }, ExclusiveStartKey: key, ...visible }));
+                  n += r.Count; key = r.LastEvaluatedKey;
+                } while (key);
+                return n;
+              },
+              async put(item) { await db.send(new PutCommand({ TableName: table, Item: item })); },
+              // true if this visitor may post now (one link per 30 seconds)
+              async claim(hash, now) {
+                try {
+                  await db.send(new PutCommand({ TableName: table, Item: { pk: "RATE#" + hash, sk: "RATE", ttl: now + 30 },
+                    ConditionExpression: "attribute_not_exists(pk) OR #t < :now",
+                    ExpressionAttributeNames: { "#t": "ttl" }, ExpressionAttributeValues: { ":now": now } }));
+                  return true;
+                } catch (e) {
+                  if (e.name === "ConditionalCheckFailedException") return false;
+                  throw e;
+                }
+              }
+            };
+          }
+
+          function createHandler(store) {
+            return async (event) => {
+              const method = event.requestContext && event.requestContext.http && event.requestContext.http.method;
+              try {
+                if (method === "GET") {
+                  const [items, count] = await Promise.all([store.list(150), store.count()]);
+                  return reply(200, { count, links: items.map((i) => ({ id: i.id, name: i.name, text: i.text, createdAt: i.createdAt })) });
+                }
+                if (method === "POST") {
+                  const raw = event.isBase64Encoded ? Buffer.from(event.body || "", "base64").toString() : event.body || "";
+                  if (raw.length > 2000) return reply(413, { message: "That request is too large." });
+                  let body;
+                  try { body = JSON.parse(raw); } catch (e) { return reply(400, { message: "Send the link as JSON." }); }
+                  const v = validate(body || {});
+                  if (v.error) return reply(400, { message: v.error });
+                  const now = Math.floor(Date.now() / 1000);
+                  const ip = (event.requestContext.http.sourceIp) || "unknown";
+                  const hash = crypto.createHash("sha256").update((process.env.SALT || "") + ip).digest("hex").slice(0, 32);
+                  if (!(await store.claim(hash, now))) return reply(429, { message: "You just added a link. Wait a minute, then add another." });
+                  const id = crypto.randomUUID();
+                  const createdAt = new Date().toISOString();
+                  await store.put({ pk: "CHAIN", sk: createdAt + "#" + id, id, name: v.name, text: v.text, type: v.type, status: "visible", createdAt });
+                  return reply(201, { link: { id, name: v.name, text: v.text, createdAt } });
+                }
+                return reply(405, { message: "Method not allowed." });
+              } catch (e) {
+                console.error(JSON.stringify({ error: e.message, stack: e.stack }));
+                return reply(500, { message: "The chain couldn't be reached. Try again in a moment." });
+              }
+            };
+          }
+
+          let handler;
+          exports.handler = (event) => {
+            handler = handler || createHandler(dynamoStore(process.env.TABLE_NAME));
+            return handler(event);
+          };
+          exports.createHandler = createHandler;
+          exports.validate = validate;
+          exports.isRude = isRude;
+
+  ChainFunctionLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ChainFunction}"
+      RetentionInDays: 14
+
+  ChainApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: kindness-chain-api
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - content-type
+        MaxAge: 3600
+
+  ChainIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ChainApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ChainFunction.Arn
+      PayloadFormatVersion: "2.0"
+
+  GetLinksRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ChainApi
+      RouteKey: GET /links
+      Target: !Sub "integrations/${ChainIntegration}"
+
+  PostLinkRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ChainApi
+      RouteKey: POST /links
+      Target: !Sub "integrations/${ChainIntegration}"
+
+  ChainStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref ChainApi
+      StageName: $default
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 20
+        ThrottlingRateLimit: 10
+
+  ApiInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ChainFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ChainApi}/*/*/links"
+
+Outputs:
+  ApiUrl:
+    Description: Paste this into config.js as CHAIN_API_URL
+    Value: !Sub "https://${ChainApi}.execute-api.${AWS::Region}.amazonaws.com"
+  TableName:
+    Description: Open this table in the DynamoDB console to remove links
+    Value: !Ref ChainTable
