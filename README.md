@@ -6,13 +6,13 @@ My portfolio for the **AWS Student Builder Challenge**. It tells my story, shows
 
 ## What's on the page
 
-- **Hero:** a sunrise that reacts to your mouse, and a live count of kind actions.
-- **About me, skills and projects:** Prometheus (Top 20 of 111 at the Salesforce Agentic AI Hackathon), a freelance water utility system, and this site.
+- **Hero:** who I am and what I do, over a sunrise that reacts to your mouse, plus a live count of kind actions.
+- **About me, skills, experience and projects:** a business intelligence internship at MBQ Group, Prometheus (Top 20 of 111 at the Salesforce Agentic AI Hackathon), a freelance water utility system, and this site.
 - **My journey:** a path from September 2024, when I knew nothing about tech, to today. It starts at night and the sky turns to sunrise at the moment I found my passion for data science.
 - **The story behind my smile:** a short personal story you can open if you want to.
-- **Your turn:** the kindness chain, the interactive feature.
+- **Your turn:** the kindness chain, the interactive feature. Because you matter.
 
-There's also a sunrise and night theme, a custom cursor that sparks when you click, and smooth scrolling. Everything respects `prefers-reduced-motion` and works with a keyboard.
+There's also a sunrise and night theme, a custom cursor that sparks when you click, and smooth scrolling. If your system asks for reduced motion, the page keeps gentle effects (light, fades, sparks) and turns off sliding, bouncing and parallax. Everything works with a keyboard.
 
 ## How it's built
 

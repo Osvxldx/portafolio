@@ -8,13 +8,16 @@
   // ?motion=full forces every animation on (handy for testing on machines with reduced motion turned on)
   var forceMotion = /[?&]motion=full\b/.test(location.search);
   if (forceMotion) root.classList.add("force-motion");
-  var reduceMotion = !forceMotion && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // "calm" = the system asked for less motion. Gentle effects (light, fades, the cursor, sparks)
+  // stay on; sliding, bouncing, parallax and smooth scrolling turn off.
+  var calm = !forceMotion && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (calm) root.classList.add("calm");
   var finePointer = window.matchMedia("(pointer: fine)").matches;
   var hasGsap = !!window.gsap;
   if (hasGsap && window.ScrollTrigger) window.gsap.registerPlugin(window.ScrollTrigger);
   var hasST = hasGsap && !!window.ScrollTrigger;
 
-  if (!reduceMotion) root.classList.add("motion");
+  root.classList.add("motion");
 
   function $(sel, ctx) { return (ctx || document).querySelector(sel); }
   function $$(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
@@ -42,7 +45,7 @@
   }
   toggle.addEventListener("click", function () {
     var next = currentTheme() === "dark" ? "light" : "dark";
-    if (!document.startViewTransition || reduceMotion) { applyTheme(next); return; }
+    if (!document.startViewTransition) { applyTheme(next); return; }
     var r = toggle.getBoundingClientRect();
     var x = r.left + r.width / 2, y = r.top + r.height / 2;
     var radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
@@ -61,6 +64,7 @@
     var ctx = canvas.getContext("2d");
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
     var w = 0, h = 0, list = [], mode = currentTheme(), mouse = { x: -9999, y: -9999 }, running = false, color = "255,170,60";
+    var pace = calm ? 0.5 : 1;
 
     function resize() {
       w = innerWidth; h = innerHeight;
@@ -95,7 +99,7 @@
           p.vy += (Math.random() - 0.5) * 0.02;
           p.vx *= 0.98; p.vy *= 0.98;
         }
-        p.x += p.vx; p.y += p.vy;
+        p.x += p.vx * pace; p.y += p.vy * pace;
         // gently move away from the cursor
         var dx = p.x + p.ox - mouse.x, dy = p.y + p.oy - mouse.y, d2 = dx * dx + dy * dy;
         if (d2 < 14400) {
@@ -120,17 +124,15 @@
       }
       requestAnimationFrame(frame);
     }
-    function start() { if (!running && !reduceMotion) { running = true; requestAnimationFrame(frame); } }
+    function start() { if (!running) { running = true; requestAnimationFrame(frame); } }
     function stop() { running = false; }
 
-    if (!reduceMotion) {
-      resize();
-      color = cssVar("--mote") || color;
-      addEventListener("resize", resize);
-      addEventListener("pointermove", function (e) { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
-      document.addEventListener("visibilitychange", function () { document.hidden ? stop() : start(); });
-      start();
-    }
+    resize();
+    color = cssVar("--mote") || color;
+    addEventListener("resize", resize);
+    addEventListener("pointermove", function (e) { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
+    document.addEventListener("visibilitychange", function () { document.hidden ? stop() : start(); });
+    start();
     return {
       setMode: function (m) { mode = m; color = cssVar("--mote") || color; }
     };
@@ -170,7 +172,6 @@
       if (items.length) requestAnimationFrame(loop); else { running = false; ctx.clearRect(0, 0, innerWidth, innerHeight); }
     }
     function burst(x, y, count) {
-      if (reduceMotion) return;
       var colors = [cssVar("--spark") || "255,160,40", "238,93,120", "255,210,120"];
       count = count || 14;
       for (var i = 0; i < count; i++) {
@@ -192,7 +193,7 @@
       if (e.target.closest("input[type=text], textarea")) return;
       sparks.burst(e.clientX, e.clientY);
     });
-    if (!finePointer || reduceMotion) return;
+    if (!finePointer) return;
     root.classList.add("has-cursor");
     var cursor = $(".cursor"), dot = $(".cursor-dot"), ring = $(".cursor-ring");
     var mx = -100, my = -100, rx = -100, ry = -100;
@@ -231,7 +232,7 @@
 
   /* ---------------- Smooth scroll (Lenis) ---------------- */
   var lenis = null;
-  if (window.Lenis && !reduceMotion) {
+  if (window.Lenis && !calm) {
     lenis = new window.Lenis({ lerp: 0.1, smoothWheel: true });
     window.__lenis = lenis;
     if (hasST) {
@@ -250,7 +251,7 @@
     if (!target) return;
     e.preventDefault();
     if (lenis) lenis.scrollTo(id === "#top" ? 0 : target, { offset: -70, duration: 1.4 });
-    else target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+    else target.scrollIntoView({ behavior: calm ? "auto" : "smooth" });
     if (id !== "#top") {
       var focusEl = target.matches("section") ? target.querySelector("h1, h2") || target : target;
       focusEl.setAttribute("tabindex", "-1");
@@ -260,7 +261,7 @@
   });
 
   /* ---------------- Reveal on scroll ---------------- */
-  if (!reduceMotion && "IntersectionObserver" in window) {
+  if ("IntersectionObserver" in window) {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
         if (!en.isIntersecting) return;
@@ -302,24 +303,24 @@
       c.style.backgroundPosition = (tl - c.offsetLeft) + "px " + (tt - c.offsetTop) + "px";
     });
   }
-  if (!reduceMotion) {
-    splitTitle();
-    addEventListener("resize", paintTitle);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(paintTitle);
-    if (hasGsap) {
-      var gsap = window.gsap;
-      var tl = gsap.timeline({ delay: 0.35, defaults: { ease: "power3.out" } });
-      tl.from(".hero-hi", { y: 20, opacity: 0, duration: 0.8 })
-        .from(".hero-title .char", { yPercent: 70, opacity: 0, rotate: 6, duration: 0.9, stagger: 0.06, ease: "back.out(1.8)", clearProps: "transform" }, "-=0.4")
-        .from(".hero-sub", { y: 18, opacity: 0, duration: 0.8 }, "-=0.4")
-        .from(".hero-actions > *", { y: 16, opacity: 0, duration: 0.7, stagger: 0.1 }, "-=0.5")
-        .from(".hero-counter", { y: 12, opacity: 0, duration: 0.6 }, "-=0.4")
-        .from(".hero-hint", { opacity: 0, duration: 0.8 }, "-=0.2");
-    }
+  splitTitle();
+  addEventListener("resize", paintTitle);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(paintTitle);
+  if (hasGsap) {
+    var gsap = window.gsap;
+    var tl = gsap.timeline({ delay: 0.35, defaults: { ease: "power3.out" } });
+    var lift = calm ? 0 : 1; // in calm mode things fade in place instead of sliding
+    tl.from(".hero-title .char", calm
+        ? { opacity: 0, duration: 0.6, stagger: 0.05 }
+        : { yPercent: 70, opacity: 0, rotate: 6, duration: 0.9, stagger: 0.06, ease: "back.out(1.8)", clearProps: "transform" })
+      .from(".hero-sub", { y: 18 * lift, opacity: 0, duration: 0.8 }, "-=0.4")
+      .from(".hero-actions > *", { y: 16 * lift, opacity: 0, duration: 0.7, stagger: 0.1 }, "-=0.5")
+      .from(".hero-counter", { y: 12 * lift, opacity: 0, duration: 0.6 }, "-=0.4")
+      .from(".hero-hint", { opacity: 0, duration: 0.8 }, "-=0.2");
   }
 
-  // The sky follows the mouse, and the sun drifts a little against it
-  if (!reduceMotion && finePointer) {
+  // The sky follows the mouse (always), and the sun drifts against it (not in calm mode)
+  if (finePointer) {
     var sun = $(".hero-sun"), inner = $(".hero-inner");
     var tx = 0, ty = 0, cx = 0, cy = 0, heroVisible = true;
     new IntersectionObserver(function (en) { heroVisible = en[0].isIntersecting; }).observe(hero);
@@ -330,7 +331,7 @@
       hero.style.setProperty("--my", (py * 100).toFixed(1) + "%");
       tx = px - 0.5; ty = py - 0.5;
     });
-    (function drift() {
+    if (!calm) (function drift() {
       if (heroVisible) {
         cx += (tx - cx) * 0.06; cy += (ty - cy) * 0.06;
         sun.style.transform = "translate3d(" + (cx * -40).toFixed(2) + "px," + (cy * -20).toFixed(2) + "px,0)";
@@ -341,7 +342,7 @@
   }
 
   /* ---------------- Card tilt ---------------- */
-  if (!reduceMotion && finePointer) {
+  if (!calm && finePointer) {
     $$(".tilt").forEach(function (card) {
       card.addEventListener("pointerenter", function () { card.style.transition = "transform 0.15s ease-out"; });
       card.addEventListener("pointermove", function (e) {
@@ -396,9 +397,9 @@
     build();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { build(); if (hasST) window.ScrollTrigger.refresh(); });
 
-    if (reduceMotion || !hasST) {
+    if (!hasST) {
       path.style.strokeDashoffset = 0;
-      if ("IntersectionObserver" in window && !reduceMotion) {
+      if ("IntersectionObserver" in window) {
         var lit = new IntersectionObserver(function (en) {
           en.forEach(function (e) { if (e.isIntersecting) e.target.classList.add("is-lit"); });
         }, { rootMargin: "0px 0px -35% 0px" });
@@ -430,7 +431,7 @@
       });
     });
     window.gsap.utils.toArray(".milestone, .year", track).forEach(function (el) {
-      window.gsap.from(el, { opacity: 0, x: 24, duration: 0.8, ease: "power3.out", scrollTrigger: { trigger: el, start: "top 85%" } });
+      window.gsap.from(el, { opacity: 0, x: calm ? 0 : 24, duration: 0.8, ease: "power3.out", scrollTrigger: { trigger: el, start: "top 85%" } });
     });
     ST.addEventListener("refreshInit", build);
     addEventListener("resize", function () { ST.refresh(); });
@@ -447,8 +448,8 @@
         body.hidden = true;
       } else {
         body.hidden = false;
-        if (hasGsap && !reduceMotion) {
-          window.gsap.from($$("p", body), { y: 18, opacity: 0, duration: 1, stagger: 0.35, ease: "power3.out" });
+        if (hasGsap) {
+          window.gsap.from($$("p", body), { y: calm ? 0 : 18, opacity: 0, duration: 1, stagger: 0.35, ease: "power3.out" });
           var r = btn.getBoundingClientRect();
           setTimeout(function () { sparks.burst(r.left + r.width / 2, r.top + r.height / 2, 22); }, 50);
         }
@@ -533,7 +534,7 @@
     function setCount(n) {
       $$(".chain-count").forEach(function (el) {
         var from = parseInt(el.textContent, 10) || 0;
-        if (!hasGsap || reduceMotion || from === n) { el.textContent = n; return; }
+        if (!hasGsap || from === n) { el.textContent = n; return; }
         var o = { v: from };
         window.gsap.to(o, { v: n, duration: 1.2, ease: "power2.out", onUpdate: function () { el.textContent = Math.round(o.v); } });
       });
@@ -570,8 +571,10 @@
       var el = linkEl(l);
       list.insertBefore(el, list.firstChild);
       setCount(total + 1);
-      if (hasGsap && !reduceMotion) {
-        window.gsap.from(el, { y: -90, rotate: -10, opacity: 0, duration: 1.1, ease: "bounce.out" });
+      if (hasGsap) {
+        window.gsap.from(el, calm
+          ? { opacity: 0, duration: 0.9 }
+          : { y: -90, rotate: -10, opacity: 0, duration: 1.1, ease: "bounce.out" });
         setTimeout(function () {
           var r = el.getBoundingClientRect();
           sparks.burst(r.left + r.width / 2, r.top + r.height / 2, 24);

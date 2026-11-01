@@ -301,8 +301,8 @@ html.has-cursor, html.has-cursor a, html.has-cursor button, html.has-cursor labe
 .hero-inner { text-align: center; max-width: 900px; position: relative; }
 .hero-hi { font-size: var(--step-2); font-weight: 800; margin-bottom: 0.2em; color: var(--ink-soft); }
 .hero-title {
-  font-size: clamp(4.2rem, min(19vw, 22vh), 12.5rem);
-  line-height: 0.86;
+  font-size: clamp(3.2rem, min(14vw, 17vh), 8.5rem);
+  line-height: 0.92;
   letter-spacing: -0.05em;
   margin-bottom: 0.25em;
   background: linear-gradient(170deg, var(--title-a) 30%, var(--title-b) 110%);
@@ -314,6 +314,7 @@ html.has-cursor, html.has-cursor a, html.has-cursor button, html.has-cursor labe
 .hero-title.is-split { background: none; color: var(--ink); }
 .hero-title.is-split .char {
   display: inline-block;
+  white-space: pre;
   background-image: linear-gradient(170deg, var(--title-a) 30%, var(--title-b) 110%);
   background-repeat: no-repeat;
   -webkit-background-clip: text; background-clip: text;
@@ -378,6 +379,22 @@ html.has-cursor, html.has-cursor a, html.has-cursor button, html.has-cursor labe
 }
 .pills li:hover { transform: translateY(-3px) rotate(-1.5deg); border-color: var(--sun); background: color-mix(in srgb, var(--sun) 16%, var(--surface-solid)); }
 @media (max-width: 860px) { .skill-groups { grid-template-columns: 1fr; } }
+
+/* ---------- Experience ---------- */
+.experience { padding-bottom: 0; }
+.job {
+  max-width: 860px;
+  padding: clamp(1.5rem, 3.5vw, 2.5rem);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--line);
+  border-left: 6px solid var(--sun);
+  background: var(--surface);
+}
+.job h3 { font-size: var(--step-2); margin-bottom: 0.3em; }
+.job p { max-width: 64ch; }
+.job-company { font-size: var(--step-1); margin-bottom: 1em; }
+.job-tools { margin-top: 1.2rem; }
+.job-tools li { font-size: 0.9rem; padding: 6px 14px; }
 
 /* ---------- Projects ---------- */
 .project {
@@ -565,6 +582,12 @@ html.has-cursor, html.has-cursor a, html.has-cursor button, html.has-cursor labe
   -webkit-background-clip: text; background-clip: text; color: transparent; padding-bottom: 0.06em;
 }
 
+.turn-matter {
+  font-size: clamp(2rem, 1.5rem + 2.5vw, 3.2rem);
+  line-height: 1.1; color: var(--accent-text);
+  margin: -0.2em 0 0.8em; rotate: -1.5deg; transform-origin: left center;
+}
+
 .chain-form {
   margin-top: 2.5rem; padding: clamp(1.4rem, 4vw, 2.5rem);
   border-radius: var(--radius-lg); background: var(--surface); border: 1.5px solid var(--line);
@@ -667,7 +690,12 @@ html.has-cursor, html.has-cursor a, html.has-cursor button, html.has-cursor labe
 /* View transition for the theme switch */
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 
-@media (prefers-reduced-motion: reduce) {
-  html:not(.force-motion) *, html:not(.force-motion) *::before, html:not(.force-motion) *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
-  html:not(.force-motion) .chain-link { animation: none; }
-}
+/* Calm mode: the system asked for less motion. Keep fades, light and color;
+   turn off looping, sliding and bouncing movement. */
+.calm { scroll-behavior: auto; }
+.calm .hero-sun-glow, .calm .chain-link, .calm .hero-hint svg, .calm .av-rays,
+.calm .journey-stars, .calm .live-dot::after, .calm .milestone.spark.is-lit::before { animation: none; }
+.calm .reveal { transform: none; }
+.calm.motion .hero-sun { animation: fade-in 1.6s var(--ease-out) both; }
+.calm .pills li:hover, .calm .btn:hover, .calm .footer-links a:hover { transform: none; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
