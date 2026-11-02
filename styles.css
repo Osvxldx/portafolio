@@ -319,6 +319,10 @@ html.has-cursor, html.has-cursor a, html.has-cursor button, html.has-cursor labe
   background-repeat: no-repeat;
   -webkit-background-clip: text; background-clip: text;
   color: transparent;
+  /* Extra paint room so tails and edges (the comma, the "v") aren't cut off; the
+     negative margin keeps the layout exactly the same */
+  padding: 0.15em 0.12em 0.25em;
+  margin: -0.15em -0.12em -0.25em;
 }
 .hero-sub { max-width: 46ch; margin: 0 auto 1.6em; font-size: var(--step-1); line-height: 1.5; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 1.6em; }
@@ -356,10 +360,8 @@ html.has-cursor, html.has-cursor a, html.has-cursor button, html.has-cursor labe
 .av-rays path { stroke: var(--sun); stroke-width: 7; stroke-linecap: round; fill: none; }
 .av-rays { transform-origin: 100px 100px; animation: spin 40s linear infinite; transition: opacity 0.5s, transform 0.5s; }
 .av-bite { transition: transform 0.8s var(--ease-out); }
-.av-initials { font-family: var(--font); font-weight: 900; font-size: 44px; fill: #4A2A1A; letter-spacing: -1px; transition: opacity 0.5s; }
 [data-theme="dark"] .av-rays { opacity: 0; }
 [data-theme="dark"] .av-bite { transform: translate(-56px, 30px); }
-[data-theme="dark"] .av-initials { fill: #3A2E52; }
 .about-avatar { position: sticky; top: 120px; filter: drop-shadow(0 20px 40px var(--glow)); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -655,6 +657,15 @@ html.has-cursor, html.has-cursor a, html.has-cursor button, html.has-cursor labe
   background: var(--c); color: #2B1E3A;
 }
 .chain-link.is-mine { box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 30%, transparent), 0 0 30px var(--glow); }
+/* Let the badge drop below the name instead of being cut off */
+.chain-link.is-first .chain-name, .chain-link.is-pending .chain-name { white-space: normal; }
+/* A link waiting for Osvaldo's review: only its author sees it, dashed and softer */
+.chain-link.is-pending { border-style: dashed; opacity: 0.85; }
+.chain-link.is-pending .chain-name::after {
+  content: "in review"; margin-left: 8px; padding: 1px 8px; border-radius: 999px;
+  font-size: 0.72rem; font-weight: 800; vertical-align: 2px;
+  border: 1.5px dashed var(--c); color: var(--ink-soft);
+}
 @keyframes sway { 0%, 100% { rotate: -0.8deg; } 50% { rotate: 0.8deg; } }
 .chain-more { margin-top: 0.5rem; }
 

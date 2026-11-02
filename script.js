@@ -297,10 +297,11 @@
   // Give every letter the slice of the gradient it would have had as a whole word
   // (uses layout offsets, so it stays correct while letters are mid-animation)
   function paintTitle() {
-    var tw = title.offsetWidth, th = title.offsetHeight, tl = title.offsetLeft, tt = title.offsetTop;
+    // P adds a margin around the gradient so the letters' extra paint room is covered too
+    var P = 80, tw = title.offsetWidth, th = title.offsetHeight, tl = title.offsetLeft, tt = title.offsetTop;
     $$(".char", title).forEach(function (c) {
-      c.style.backgroundSize = tw + "px " + th + "px";
-      c.style.backgroundPosition = (tl - c.offsetLeft) + "px " + (tt - c.offsetTop) + "px";
+      c.style.backgroundSize = (tw + 2 * P) + "px " + (th + 2 * P) + "px";
+      c.style.backgroundPosition = (tl - P - c.offsetLeft) + "px " + (tt - P - c.offsetTop) + "px";
     });
   }
   splitTitle();
@@ -492,33 +493,43 @@
     var WORDS = ("puta puto putas putos putita putito puton culo culos pito pitos joto jotos zorra zorras perra perras pinche pinches " +
       "mamada mamadas mamon mamona idiota idiotas imbecil imbeciles estupido estupida estupidos polla hdp ptm alv kys " +
       "dick dicks cock cocks slut sluts whore whores retard retards nazi nazis ass pussy bastard bastards panocha ojete " +
-      "nalgas verga vergas marica maricas maricon maricones").split(" ");
+      "nalgas verga vergas marica maricas maricon maricones ctm csm vrg " +
+      "stupid stupids idiot idiots moron morons dumbass loser losers twat wanker prick fag fags fck fk fuk stfu gtfo hitler kkk " +
+      "matate muerete suicidate jodete jodanse tarado tarada tarados baboso babosa cagada cagado chupala chupamela mamala mamaguevo").split(" ");
     var STEMS = ["fuck", "shit", "bitch", "asshole", "cunt", "nigg", "fagg", "motherf", "pendej", "chinga",
       "chingu", "cabron", "culer", "mierd", "gilipoll", "putaz", "punet", "malparid", "hijodeput", "chingad"];
-    var SQUASHED = ["fuck", "nigger", "pendejo", "pendeja", "chingada", "mierda", "hijodeputa", "killyourself", "motherfucker"];
+    var SQUASHED = ["fuck", "nigger", "nigga", "pendejo", "pendeja", "chingada", "mierda", "hijodeputa", "killyourself",
+      "killurself", "motherfucker", "hitler"];
     function normalize(s) {
       return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
         .replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e").replace(/4/g, "a")
         .replace(/5/g, "s").replace(/7/g, "t").replace(/@/g, "a").replace(/\$/g, "s");
     }
+    function squeeze(t) { return t.replace(/(.)\1+/g, "$1"); } // "fuuuuck" -> "fuck"
     function isRude(s) {
       var n = normalize(s);
       var tokens = n.split(/[^a-z]+/).filter(Boolean);
       for (var i = 0; i < tokens.length; i++) {
-        var t = tokens[i];
-        if (WORDS.indexOf(t) !== -1) return true;
-        for (var j = 0; j < STEMS.length; j++) if (t.indexOf(STEMS[j]) === 0) return true;
+        var forms = [tokens[i], squeeze(tokens[i])];
+        for (var f = 0; f < 2; f++) {
+          var t = forms[f];
+          if (WORDS.indexOf(t) !== -1) return true;
+          for (var j = 0; j < STEMS.length; j++) if (t.indexOf(STEMS[j]) === 0) return true;
+        }
       }
       var squashed = n.replace(/[^a-z]/g, "");
-      for (var k = 0; k < SQUASHED.length; k++) if (squashed.indexOf(SQUASHED[k]) !== -1) return true;
+      var both = [squashed, squeeze(squashed)];
+      for (var b = 0; b < 2; b++)
+        for (var k = 0; k < SQUASHED.length; k++) if (both[b].indexOf(SQUASHED[k]) !== -1) return true;
       return false;
     }
-    var URLISH = /(https?:|www\.|\.(com|net|org|io|xyz|ru|mx|co|info|biz|me|ly|gg|app|dev|site|online|link)\b|@\w|\d{7,})/i;
-    var NAME_RE = /^[\p{L}][\p{L}\p{M} .'\-]{0,29}$/u;
+    var URLISH = /(https?:|www\.|\.(com|net|org|io|xyz|ru|mx|co|info|biz|me|ly|gg|app|dev|site|online|link)\b|@\w|(\d[\s.\-()]*){7,})/i;
+    // A first name: letters only, at most two words and 24 characters
+    var NAME_RE = /^[\p{L}][\p{L}\p{M}.'\-]{0,23}( [\p{L}][\p{L}\p{M}.'\-]*)?$/u;
 
     function validate(name, actionId, custom) {
       if (!name) return { field: nameInput, msg: "Add your first name so your link has an owner." };
-      if (!NAME_RE.test(name)) return { field: nameInput, msg: "Use only letters in your name, up to 30 characters." };
+      if (name.length > 24 || !NAME_RE.test(name)) return { field: nameInput, msg: "Use just your first name: letters only, up to 24 characters." };
       if (isRude(name)) return { field: nameInput, msg: "That name can't go on the chain. Try your first name." };
       if (actionId === "custom") {
         if (custom.length < 3) return { field: customInput, msg: "Write your kind action, at least 3 characters." };
@@ -542,7 +553,7 @@
     }
     function linkEl(l) {
       var li = document.createElement("li");
-      li.className = "chain-link" + (mine.indexOf(l.id) !== -1 || l.local ? " is-mine" : "") + (l.first ? " is-first" : "");
+      li.className = "chain-link" + (mine.indexOf(l.id) !== -1 || l.local ? " is-mine" : "") + (l.first ? " is-first" : "") + (l.pending ? " is-pending" : "");
       li.style.setProperty("--d", (-Math.random() * 6).toFixed(2) + "s");
       var who = document.createElement("p");
       who.className = "chain-name";
@@ -550,7 +561,7 @@
       var what = document.createElement("p");
       what.className = "chain-text";
       what.textContent = l.text;
-      li.title = (l.first ? "Osvaldo" : l.name) + ": " + l.text;
+      li.title = (l.first ? "Osvaldo" : l.name) + ": " + l.text + (l.pending ? " (in review, only you can see it for now)" : "");
       li.appendChild(who);
       li.appendChild(what);
       return li;
@@ -567,7 +578,7 @@
 
     function addToTop(l) {
       links.unshift(l);
-      total += 1;
+      if (!l.pending) total += 1; // links in review don't count until they're approved
       var el = linkEl(l);
       list.insertBefore(el, list.firstChild);
       setCount(total + 1);
@@ -586,6 +597,9 @@
     /* ---- local preview storage (used when the API isn't set or can't be reached) ---- */
     function localLinks() { try { return JSON.parse(store("localLinks") || "[]"); } catch (e) { return []; } }
     function saveLocal(l) { var arr = localLinks(); arr.unshift(l); store("localLinks", JSON.stringify(arr.slice(0, 20))); }
+    // Links in the visitor's own words wait for review; until then only their author sees them
+    function pendingLinks() { try { return JSON.parse(store("pendingLinks") || "[]"); } catch (e) { return []; } }
+    function savePending(arr) { store("pendingLinks", JSON.stringify(arr.slice(0, 10))); }
 
     /* ---- load ---- */
     function load() {
@@ -598,8 +612,17 @@
       fetch(API + "/links", { headers: { Accept: "application/json" } })
         .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
         .then(function (data) {
-          links = (data.links || []).concat(localLinks());
-          total = (typeof data.count === "number" ? data.count : (data.links || []).length) + localLinks().length;
+          var shared = data.links || [];
+          var ids = shared.map(function (l) { return l.id; });
+          // Drop the ones that were approved (they're on the shared chain now), and
+          // forget anything older than a week (it was probably not approved)
+          var weekAgo = Date.now() - 7 * 864e5;
+          var waiting = pendingLinks().filter(function (l) {
+            return ids.indexOf(l.id) === -1 && new Date(l.createdAt).getTime() > weekAgo;
+          });
+          savePending(waiting);
+          links = waiting.concat(shared, localLinks());
+          total = (typeof data.count === "number" ? data.count : shared.length) + localLinks().length;
           render();
         })
         .catch(function () {
@@ -645,7 +668,9 @@
         addToTop(link);
         say(localOnly
           ? "Your link is on the chain on this device. The shared chain will show it once it's connected."
-          : "Your link is on the chain. Thank you, " + name + ".");
+          : link.pending
+            ? "Thank you, " + name + "! Your link will join the shared chain after a quick review. For now, only you can see it."
+            : "Your link is on the chain. Thank you, " + name + ".");
         customInput.value = ""; customCount.textContent = "0";
       }
 
@@ -668,9 +693,14 @@
         })
         .then(function (res) {
           if (res.ok && res.data.link) {
-            mine.push(res.data.link.id);
+            var link = res.data.link;
+            mine.push(link.id);
             store("myLinkIds", JSON.stringify(mine.slice(-20)));
-            done(res.data.link, false);
+            if (res.data.pending) {
+              link.pending = true;
+              savePending([link].concat(pendingLinks()));
+            }
+            done(link, false);
           } else if (res.status === 429) {
             say("You just added a link. Wait a minute, then add another.", true);
           } else {

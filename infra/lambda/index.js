@@ -9,29 +9,40 @@ const PRESETS = {
   smile: "Smile at a stranger",
   matter: "Tell someone they matter"
 };
-const WORDS = new Set(("puta puto putas putos putita putito puton culo culos pito pitos joto jotos zorra zorras perra perras pinche pinches mamada mamadas mamon mamona idiota idiotas imbecil imbeciles estupido estupida estupidos polla hdp ptm alv kys dick dicks cock cocks slut sluts whore whores retard retards nazi nazis ass pussy bastard bastards panocha ojete nalgas verga vergas marica maricas maricon maricones").split(" "));
+// Moderation, in two layers:
+// 1. This filter rejects rude words right away (English and Spanish, also with
+//    l33t, s.p.a.c.e.d or loooong letters).
+// 2. Anything written in the visitor's own words is saved as "pending" and only
+//    shows on the chain after Osvaldo approves it. Preset actions show at once.
+const WORDS = new Set(("puta puto putas putos putita putito puton culo culos pito pitos joto jotos zorra zorras perra perras pinche pinches mamada mamadas mamon mamona idiota idiotas imbecil imbeciles estupido estupida estupidos polla hdp ptm ctm csm alv vrg kys dick dicks cock cocks slut sluts whore whores retard retards nazi nazis ass pussy bastard bastards panocha ojete nalgas verga vergas marica maricas maricon maricones " +
+  "stupid stupids idiot idiots moron morons dumbass loser losers twat wanker prick fag fags fck fk fuk stfu gtfo hitler kkk " +
+  "matate muerete suicidate jodete jodanse tarado tarada tarados baboso babosa cagada cagado chupala chupamela mamala mamaguevo").split(" "));
 const STEMS = "fuck shit bitch asshole cunt nigg fagg motherf pendej chinga chingu cabron culer mierd gilipoll putaz punet malparid hijodeput chingad".split(" ");
-const SQUASHED = "fuck nigger pendejo pendeja chingada mierda hijodeputa killyourself motherfucker".split(" ");
-const URLISH = /(https?:|www\.|\.(com|net|org|io|xyz|ru|mx|co|info|biz|me|ly|gg|app|dev|site|online|link)\b|@\w|\d{7,})/i;
-const NAME_RE = /^[\p{L}][\p{L}\p{M} .'\-]{0,29}$/u;
+const SQUASHED = "fuck nigger nigga pendejo pendeja chingada mierda hijodeputa killyourself killurself motherfucker hitler".split(" ");
+const URLISH = /(https?:|www\.|\.(com|net|org|io|xyz|ru|mx|co|info|biz|me|ly|gg|app|dev|site|online|link)\b|@\w|(\d[\s.\-()]*){7,})/i;
+// A first name: letters only, at most two words and 24 characters
+const NAME_RE = /^[\p{L}][\p{L}\p{M}.'\-]{0,23}( [\p{L}][\p{L}\p{M}.'\-]*)?$/u;
 
 const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
   .replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e").replace(/4/g, "a")
   .replace(/5/g, "s").replace(/7/g, "t").replace(/@/g, "a").replace(/\$/g, "s");
+const squeeze = (t) => t.replace(/(.)\1+/g, "$1"); // "fuuuuck" -> "fuck"
 
 function isRude(s) {
   const n = norm(s);
   for (const t of n.split(/[^a-z]+/)) {
     if (!t) continue;
-    if (WORDS.has(t) || STEMS.some((x) => t.startsWith(x))) return true;
+    for (const w of [t, squeeze(t)]) {
+      if (WORDS.has(w) || STEMS.some((x) => w.startsWith(x))) return true;
+    }
   }
   const sq = n.replace(/[^a-z]/g, "");
-  return SQUASHED.some((x) => sq.includes(x));
+  return [sq, squeeze(sq)].some((x) => SQUASHED.some((bad) => x.includes(bad)));
 }
 
 function validate(body) {
   const name = String(body.name || "").trim().replace(/\s+/g, " ");
-  if (!NAME_RE.test(name) || isRude(name)) return { error: "Use your first name, letters only, up to 30 characters." };
+  if (name.length > 24 || !NAME_RE.test(name) || isRude(name)) return { error: "Use your first name, letters only, up to 24 characters." };
   if (body.actionId) {
     if (!PRESETS[body.actionId]) return { error: "Pick one of the kind actions." };
     return { name, text: PRESETS[body.actionId], type: "preset" };
@@ -41,6 +52,21 @@ function validate(body) {
   if (URLISH.test(text)) return { error: "Links, emails and phone numbers can't go on the chain." };
   if (isRude(text)) return { error: "Keep it kind, please. Try different words." };
   return { name, text, type: "custom" };
+}
+
+// Optional email to Osvaldo when a link waits for review (Amazon SNS)
+async function notifyReview(link) {
+  const topic = process.env.TOPIC_ARN;
+  if (!topic) return;
+  try {
+    const { SNSClient, PublishCommand } = require("@aws-sdk/client-sns");
+    const region = process.env.AWS_REGION;
+    const tableUrl = "https://" + region + ".console.aws.amazon.com/dynamodbv2/home?region=" + region + "#item-explorer?table=" + process.env.TABLE_NAME;
+    await new SNSClient({}).send(new PublishCommand({ TopicArn: topic, Subject: "New link waiting for review",
+      Message: link.name + ": " + link.text + "\n\nTo approve it, change its status from \"pending\" to \"visible\" in DynamoDB.\nTo reject it, change it to \"hidden\".\n\n" + tableUrl }));
+  } catch (e) {
+    console.error(JSON.stringify({ notifyError: e.message }));
+  }
 }
 
 const reply = (statusCode, data) => ({
@@ -86,7 +112,7 @@ function dynamoStore(table) {
   };
 }
 
-function createHandler(store) {
+function createHandler(store, notify = notifyReview) {
   return async (event) => {
     const method = event.requestContext && event.requestContext.http && event.requestContext.http.method;
     try {
@@ -107,8 +133,14 @@ function createHandler(store) {
         if (!(await store.claim(hash, now))) return reply(429, { message: "You just added a link. Wait a minute, then add another." });
         const id = crypto.randomUUID();
         const createdAt = new Date().toISOString();
-        await store.put({ pk: "CHAIN", sk: createdAt + "#" + id, id, name: v.name, text: v.text, type: v.type, status: "visible", createdAt });
-        return reply(201, { link: { id, name: v.name, text: v.text, createdAt } });
+        const pending = v.type === "custom";
+        const link = { id, name: v.name, text: v.text, createdAt };
+        await store.put({ pk: "CHAIN", sk: createdAt + "#" + id, ...link, type: v.type, status: pending ? "pending" : "visible" });
+        if (pending) {
+          await notify(link);
+          return reply(202, { pending: true, link });
+        }
+        return reply(201, { link });
       }
       return reply(405, { message: "Method not allowed." });
     } catch (e) {

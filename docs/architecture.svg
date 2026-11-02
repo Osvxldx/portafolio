@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 980" width="1800" height="980" font-family="Nunito, 'Segoe UI', Arial, sans-serif">
+  <title>You matter: architecture of Osvaldo's portfolio and kindness chain on AWS</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#5B4A6B"/>
+    </marker>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF1E4"/>
+      <stop offset="1" stop-color="#FFE3D0"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#C7764A" flood-opacity="0.18"/>
+    </filter>
+    <style>
+      .box { fill: #FFFFFF; stroke: #EAD7C8; stroke-width: 2; filter: url(#shadow); }
+      .name { font-size: 21px; font-weight: 800; fill: #2B1E3A; }
+      .role { font-size: 16px; fill: #5B4A6B; }
+      .tag { font-size: 15px; font-weight: 800; fill: #FFFFFF; }
+      .edge { stroke: #5B4A6B; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .edge.soft { stroke-dasharray: 8 6; }
+      .label { font-size: 16px; font-weight: 700; fill: #2B1E3A; }
+      .step { font-size: 15px; font-weight: 900; fill: #FFFFFF; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="980" fill="url(#sky)"/>
+  <circle cx="1690" cy="110" r="70" fill="#FFC15E" opacity="0.55"/>
+  <circle cx="1690" cy="110" r="42" fill="#FFB347"/>
+
+  <text x="60" y="78" font-size="40" font-weight="900" fill="#2B1E3A">You matter: architecture</text>
+  <text x="60" y="114" font-size="19" fill="#5B4A6B">A static portfolio on AWS Amplify Hosting, plus a serverless API for the kindness chain.</text>
+
+  <!-- CloudFormation boundary -->
+  <rect x="410" y="400" width="1060" height="490" rx="28" fill="#FFFFFF" fill-opacity="0.35" stroke="#E7157B" stroke-width="2.5" stroke-dasharray="12 8"/>
+  <rect x="430" y="384" width="560" height="34" rx="17" fill="#E7157B"/>
+  <text x="450" y="407" class="tag">AWS CloudFormation: the whole backend from one template</text>
+
+  <!-- Visitor -->
+  <g>
+    <rect class="box" x="60" y="430" width="240" height="140" rx="22"/>
+    <rect x="60" y="430" width="10" height="140" rx="5" fill="#FF9A3D"/>
+    <text x="90" y="478" class="name">Visitor</text>
+    <text x="90" y="508" class="role">Any browser,</text>
+    <text x="90" y="530" class="role">desktop or phone</text>
+  </g>
+
+  <!-- Amplify -->
+  <g>
+    <rect class="box" x="440" y="150" width="300" height="140" rx="22"/>
+    <rect x="440" y="150" width="10" height="140" rx="5" fill="#DD344C"/>
+    <text x="470" y="196" class="name">AWS Amplify Hosting</text>
+    <text x="470" y="226" class="role">Serves index.html, styles.css,</text>
+    <text x="470" y="248" class="role">script.js over HTTPS (CDN)</text>
+  </g>
+
+  <!-- GitHub -->
+  <g>
+    <rect class="box" x="840" y="150" width="280" height="140" rx="22"/>
+    <rect x="840" y="150" width="10" height="140" rx="5" fill="#24292F"/>
+    <text x="870" y="196" class="name">GitHub</text>
+    <text x="870" y="226" class="role">Public repository</text>
+    <text x="870" y="248" class="role">Osvxldx/portafolio (main)</text>
+  </g>
+
+  <!-- API Gateway -->
+  <g>
+    <rect class="box" x="440" y="440" width="290" height="150" rx="22"/>
+    <rect x="440" y="440" width="10" height="150" rx="5" fill="#E7157B"/>
+    <text x="470" y="486" class="name">Amazon API Gateway</text>
+    <text x="470" y="516" class="role">HTTP API: GET and POST /links</text>
+    <text x="470" y="538" class="role">CORS only for my site,</text>
+    <text x="470" y="560" class="role">throttling against spam</text>
+  </g>
+
+  <!-- Lambda -->
+  <g>
+    <rect class="box" x="810" y="440" width="290" height="150" rx="22"/>
+    <rect x="810" y="440" width="10" height="150" rx="5" fill="#ED7100"/>
+    <text x="840" y="486" class="name">AWS Lambda</text>
+    <text x="840" y="516" class="role">Node.js 22. Checks names,</text>
+    <text x="840" y="538" class="role">filters rude words (EN/ES),</text>
+    <text x="840" y="560" class="role">1 link per 30 s, hashes IPs</text>
+  </g>
+
+  <!-- DynamoDB -->
+  <g>
+    <rect class="box" x="1160" y="440" width="280" height="150" rx="22"/>
+    <rect x="1160" y="440" width="10" height="150" rx="5" fill="#C925D1"/>
+    <text x="1190" y="486" class="name">Amazon DynamoDB</text>
+    <text x="1190" y="516" class="role">Table KindnessChain:</text>
+    <text x="1190" y="538" class="role">visible, pending, hidden.</text>
+    <text x="1190" y="560" class="role">Rate limits expire (TTL)</text>
+  </g>
+
+  <!-- SNS -->
+  <g>
+    <rect class="box" x="810" y="700" width="290" height="140" rx="22"/>
+    <rect x="810" y="700" width="10" height="140" rx="5" fill="#E7157B"/>
+    <text x="840" y="746" class="name">Amazon SNS</text>
+    <text x="840" y="776" class="role">Emails me when a link</text>
+    <text x="840" y="798" class="role">is waiting for review</text>
+  </g>
+
+  <!-- IAM + CloudWatch -->
+  <g>
+    <rect class="box" x="440" y="680" width="290" height="80" rx="18"/>
+    <rect x="440" y="680" width="10" height="80" rx="5" fill="#DD344C"/>
+    <text x="470" y="713" class="name" font-size="20">AWS IAM</text>
+    <text x="470" y="740" class="role">Least privilege for the Lambda</text>
+    <rect class="box" x="440" y="780" width="290" height="80" rx="18"/>
+    <rect x="440" y="780" width="10" height="80" rx="5" fill="#E7157B"/>
+    <text x="470" y="813" class="name" font-size="20">Amazon CloudWatch</text>
+    <text x="470" y="840" class="role">Lambda logs, kept 14 days</text>
+  </g>
+
+  <!-- Osvaldo -->
+  <g>
+    <rect class="box" x="1520" y="700" width="240" height="140" rx="22"/>
+    <rect x="1520" y="700" width="10" height="140" rx="5" fill="#FF9A3D"/>
+    <text x="1550" y="746" class="name">Me (Osvaldo)</text>
+    <text x="1550" y="776" class="role">Approves or hides</text>
+    <text x="1550" y="798" class="role">links in DynamoDB</text>
+  </g>
+
+  <!-- Edges -->
+  <!-- 1 Visitor -> Amplify -->
+  <path class="edge" d="M180 430 V220 H436"/>
+  <circle cx="180" cy="330" r="15" fill="#FF9A3D"/><text x="180" y="335" class="step" text-anchor="middle">1</text>
+  <text x="204" y="326" class="label">loads the site</text>
+
+  <!-- GitHub -> Amplify -->
+  <path class="edge" d="M840 220 H744"/>
+  <text x="792" y="322" class="label" text-anchor="middle">every git push redeploys the site</text>
+
+  <!-- 2 Visitor -> API Gateway -->
+  <path class="edge" d="M300 515 H436"/>
+  <circle cx="368" cy="482" r="15" fill="#FF9A3D"/><text x="368" y="487" class="step" text-anchor="middle">2</text>
+  <text x="368" y="548" class="label" text-anchor="middle">fetch</text>
+
+  <!-- 3 API Gateway -> Lambda -->
+  <path class="edge" d="M730 515 H806"/>
+  <circle cx="768" cy="482" r="15" fill="#FF9A3D"/><text x="768" y="487" class="step" text-anchor="middle">3</text>
+
+  <!-- 4 Lambda -> DynamoDB -->
+  <path class="edge" d="M1100 515 H1156"/>
+  <circle cx="1130" cy="482" r="15" fill="#FF9A3D"/><text x="1130" y="487" class="step" text-anchor="middle">4</text>
+
+  <!-- 5 Lambda -> SNS -->
+  <path class="edge soft" d="M955 590 V696"/>
+  <circle cx="955" cy="643" r="15" fill="#FF9A3D"/><text x="955" y="648" class="step" text-anchor="middle">5</text>
+  <text x="980" y="638" class="label">own words?</text>
+  <text x="980" y="658" class="label">tell Osvaldo</text>
+
+  <!-- SNS -> Osvaldo -->
+  <path class="edge soft" d="M1100 770 H1516"/>
+  <text x="1300" y="760" class="label" text-anchor="middle">email</text>
+
+  <!-- 6 Osvaldo -> DynamoDB -->
+  <path class="edge soft" d="M1640 700 V515 H1444"/>
+  <circle cx="1640" cy="610" r="15" fill="#FF9A3D"/><text x="1640" y="615" class="step" text-anchor="middle">6</text>
+  <text x="1665" y="600" class="label">approve:</text>
+  <text x="1665" y="622" class="label">pending →</text>
+  <text x="1665" y="644" class="label">visible</text>
+
+  <!-- Legend -->
+  <text x="60" y="935" font-size="17" fill="#5B4A6B"><tspan font-weight="800" fill="#2B1E3A">How a link travels: </tspan>1 the page loads from Amplify · 2 the visitor adds a link · 3 Lambda validates it · 4 it's saved in DynamoDB.</text>
+  <text x="60" y="960" font-size="17" fill="#5B4A6B">Preset kind actions show on the chain at once. Words of the visitor's own wait as "pending": 5 SNS emails me, 6 I approve them.</text>
+</svg>

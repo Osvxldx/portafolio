@@ -17,7 +17,8 @@ const ev = (method, body, ip = "1.2.3.4") => ({ requestContext: { http: { method
 
 (async () => {
   const store = memoryStore();
-  const handler = createHandler(store);
+  const notified = [];
+  const handler = createHandler(store, async (l) => { notified.push(l); });
   let passed = 0;
   const check = (name, fn) => Promise.resolve(fn()).then(() => { passed++; console.log("ok  " + name); });
 
@@ -34,9 +35,36 @@ const ev = (method, body, ip = "1.2.3.4") => ({ requestContext: { http: { method
     const r = await handler(ev("POST", { name: "Ana", actionId: "smile" }));
     assert.strictEqual(r.statusCode, 429);
   });
-  await check("custom text from another visitor is saved", async () => {
+  await check("custom text waits for review and is not public yet", async () => {
     const r = await handler(ev("POST", { name: "José", customText: "Cook dinner for my mom" }, "5.6.7.8"));
-    assert.strictEqual(r.statusCode, 201);
+    assert.strictEqual(r.statusCode, 202);
+    assert.strictEqual(JSON.parse(r.body).pending, true);
+    assert.strictEqual(store.items[1].status, "pending");
+    assert.strictEqual(notified.length, 1);
+    const b = JSON.parse((await handler(ev("GET"))).body);
+    assert.strictEqual(b.count, 1);
+    assert.ok(!b.links.some((l) => l.name === "José"));
+  });
+  await check("approved custom text shows on the chain", async () => {
+    store.items[1].status = "visible"; // what Osvaldo does in the DynamoDB console
+    const b = JSON.parse((await handler(ev("GET"))).body);
+    assert.strictEqual(b.count, 2);
+  });
+  await check("tricky rude text is caught", () => {
+    ["fuuuuck", "f u u c k", "you are stupid", "matate", "hitler was right", "Ad0lf H1tler", "kill urself", "eres un tarado"]
+      .forEach((s) => assert.strictEqual(isRude(s), true, s));
+  });
+  await check("phone numbers with spaces are rejected", async () => {
+    const r = await handler(ev("POST", { name: "Spam", customText: "call me 222 123 4567" }, "9.9.9.6"));
+    assert.strictEqual(r.statusCode, 400);
+  });
+  await check("names must look like a first name", async () => {
+    for (const name of ["Osvaldo es feo y apesta", "Hitler", "Puto"]) {
+      const r = await handler(ev("POST", { name, actionId: "thank" }, "9.9.8." + name.length));
+      assert.strictEqual(r.statusCode, 400, name);
+    }
+    const ok = await handler(ev("POST", { name: "Ana María", actionId: "thank" }, "9.9.7.1"));
+    assert.strictEqual(ok.statusCode, 201);
   });
   await check("rude custom text is rejected", async () => {
     const r = await handler(ev("POST", { name: "Troll", customText: "eres un p3nd3jo" }, "9.9.9.1"));
@@ -59,13 +87,16 @@ const ev = (method, body, ip = "1.2.3.4") => ({ requestContext: { http: { method
     assert.strictEqual(r.statusCode, 400);
   });
   await check("normal words are not flagged", () => {
-    ["Maricela", "Calcular la computadora", "Push it to the limit", "Vergüenza no", "Help my classmate", "Disputa resuelta"].forEach((s) => assert.strictEqual(isRude(s), false, s));
+    ["Maricela", "Calcular la computadora", "Push it to the limit", "Vergüenza no", "Help my classmate", "Disputa resuelta",
+      "Ver a mi abuela", "Comer tomates", "Pass the class", "Assist my teammate", "Cook a good meal", "Llamar a mi mamá", "Comprar peras"]
+      .forEach((s) => assert.strictEqual(isRude(s), false, s));
   });
   await check("hidden links disappear and newest comes first", async () => {
     store.items[0].status = "hidden"; // what Osvaldo does in the DynamoDB console
     const b = JSON.parse((await handler(ev("GET"))).body);
-    assert.strictEqual(b.count, 1);
-    assert.strictEqual(b.links[0].name, "José");
+    assert.strictEqual(b.count, 2);
+    assert.strictEqual(b.links[0].name, "Ana María");
+    assert.strictEqual(b.links[1].name, "José");
     assert.ok(!("pk" in b.links[0]) && !("status" in b.links[0]));
   });
   await check("other methods return 405", async () => {

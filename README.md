@@ -16,22 +16,20 @@ There's also a sunrise and night theme, a custom cursor that sparks when you cli
 
 ## How it's built
 
-```
-Browser ── index.html, styles.css, script.js (AWS Amplify Hosting)
-   │
-   └── fetch ──► Amazon API Gateway (HTTP API, CORS, throttling)
-                     │
-                     └──► AWS Lambda (Node.js 22): validates and filters each link
-                               │
-                               └──► Amazon DynamoDB (table KindnessChain)
-```
+![Architecture: the visitor loads the site from AWS Amplify Hosting and adds links through Amazon API Gateway, AWS Lambda and Amazon DynamoDB. Amazon SNS emails me when a link needs review.](docs/architecture.png)
 
 - **Frontend:** plain HTML, CSS and JavaScript with no build step. GSAP, ScrollTrigger and Lenis load from a CDN for animation and smooth scrolling. The page still works if they don't load.
 - **AWS Amplify Hosting:** deploys the site from this repository on every push (see `amplify.yml`).
-- **Amazon API Gateway (HTTP API):** `GET /links` and `POST /links`, with CORS and rate limits.
-- **AWS Lambda:** checks names and actions, blocks rude words in English and Spanish, blocks links, and limits each visitor to one link every 30 seconds. IP addresses are hashed before they're stored.
-- **Amazon DynamoDB:** stores the links. Rate-limit records expire on their own with TTL. To remove a link, I delete it or set `status` to `hidden` in the DynamoDB console.
+- **Amazon API Gateway (HTTP API):** `GET /links` and `POST /links`, with CORS limited to my site and throttling.
+- **AWS Lambda:** checks names and actions, blocks rude words in English and Spanish (also written with numbers, spaces or stretched letters), blocks links and phone numbers, and limits each visitor to one link every 30 seconds. IP addresses are hashed before they're stored.
+- **Amazon DynamoDB:** stores the links. Rate-limit records expire on their own with TTL.
+- **Amazon SNS:** emails me when a link needs review.
+- **AWS IAM and Amazon CloudWatch:** a least-privilege role for the Lambda, and its logs.
 - **AWS CloudFormation:** `infra/kindness-chain.yaml` creates the whole backend in one step.
+
+### Keeping the chain kind
+
+Preset kind actions go on the chain right away. A link written in the visitor's own words is saved as `pending`: only its author sees it, marked "in review", until I approve it by changing `status` to `visible` in the DynamoDB console. To remove any link, I set its `status` to `hidden`.
 
 ## Run it locally
 
@@ -46,7 +44,7 @@ node infra/lambda/test.js   # run the Lambda tests
 node infra/build.mjs        # rebuild infra/kindness-chain.yaml after editing the Lambda
 ```
 
-Deploy `infra/kindness-chain.yaml` as a CloudFormation stack, then paste the `ApiUrl` output into `config.js`.
+Deploy `infra/kindness-chain.yaml` as a CloudFormation stack, then paste the `ApiUrl` output into `config.js`. Set the optional `NotifyEmail` parameter to get an email when a link needs review.
 
 ---
 
