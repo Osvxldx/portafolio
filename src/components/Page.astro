@@ -1,0 +1,365 @@
+---
+import Base from "../layouts/Base.astro";
+import { content, type Lang } from "../i18n/content";
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = content[lang];
+const home = lang === "en" ? "/" : "/es/";
+const other = lang === "en" ? "/es/" : "/";
+const presets = ["thank", "listen", "message", "help", "smile", "matter"] as const;
+
+// What the page script needs: messages, the preset texts in this language, and the English ones the API stores
+const runtime = {
+  lang,
+  msg: t.msg,
+  actions: t.actions,
+  presetsEn: content.en.actions,
+  toggles: t.toggles,
+  turn: { prev: t.turn.prev, next: t.turn.next },
+};
+
+/* ---- Shapes drawn in code: a flower outline and a seed, so they can morph into each other ---- */
+// A flower of n rounded petals around (cx, cy), drawn as one closed outline
+function flower(cx: number, cy: number, r: number, n = 5, turn = 0) {
+  let d = "";
+  for (let i = 0; i < n; i++) {
+    const a = turn + (i / n) * Math.PI * 2, w = Math.PI / n;
+    const p = (ang: number, rad: number) => `${(cx + Math.cos(ang) * rad).toFixed(1)},${(cy + Math.sin(ang) * rad).toFixed(1)}`;
+    d += `${i ? "" : "M" + p(a - w, r * 0.28)} C${p(a - w * 1.25, r * 0.95)} ${p(a - w * 0.45, r * 1.15)} ${p(a, r)} C${p(a + w * 0.45, r * 1.15)} ${p(a + w * 1.25, r * 0.95)} ${p(a + w, r * 0.28)} `;
+  }
+  return d + "Z";
+}
+const SEED = "M0,-9 C6,-9 8,-2 8,3 C8,8 4,11 0,11 C-4,11 -8,8 -8,3 C-8,-2 -6,-9 0,-9 Z";
+const BLOOM = flower(0, 0, 13, 5, -Math.PI / 2);
+
+/* ---- Skills: one bouquet, three stems, every flower a skill ---- */
+const HEADS = [[150, 205], [305, 130], [462, 215]];
+const TIE = [305, 500];
+const bouquet = t.skills.groups.map((g, gi) => {
+  const [hx, hy] = HEADS[gi];
+  const n = g.items.length - 1;
+  const blooms = g.items.map((name, i) => {
+    // the first skill is the big flower at the head; the rest ring around it
+    const a = -Math.PI * 0.95 + ((i - 1) / Math.max(1, n - 1)) * Math.PI * 1.25 + (gi - 1) * 0.35;
+    const rr = 74 + ((i * 13) % 12);
+    const x = i === 0 ? hx : hx + Math.cos(a) * rr, y = i === 0 ? hy : hy + Math.sin(a) * rr * 0.9;
+    const r = i === 0 ? 42 : 25 + ((i * 7) % 7);
+    return { name, x, y, r, d: flower(x, y, r, gi === 1 ? 6 : 5, i * 0.6) };
+  });
+  const stem = `M${TIE[0]},${TIE[1]} C${TIE[0] + (hx - TIE[0]) * 0.2},${TIE[1] - 120} ${hx + (TIE[0] - hx) * 0.25},${hy + 140} ${hx},${hy + 20}`;
+  const mid = [TIE[0] + (hx - TIE[0]) * 0.45, (TIE[1] + hy) / 2 + 30];
+  const side = gi === 0 ? -1 : 1;
+  const leaf = `M${mid[0]},${mid[1]} C${mid[0] + side * 40},${mid[1] - 30} ${mid[0] + side * 70},${mid[1] - 10} ${mid[0] + side * 80},${mid[1] + 18} C${mid[0] + side * 50},${mid[1] + 20} ${mid[0] + side * 20},${mid[1] + 14} ${mid[0]},${mid[1]} Z`;
+  return { name: g.name, items: g.items, blooms, stem, leaf, head: HEADS[gi] };
+});
+
+// A page edge drawn by hand: a slightly uneven rectangle, in a 100×100 box stretched over the card
+const EDGE = "M1.2,1.6 C30,0.8 70,1.9 98.6,1.1 C99.3,30 98.7,70 99.1,98.5 C70,99.2 30,98.6 1.4,99.0 C0.8,70 1.6,30 1.2,1.6 Z";
+const pressed = ["azalea", "cosmos-pink", "cosmos-white"];
+---
+<Base t={t} path={home} altPath={other}>
+  <a class="skip-link" href="#main">{t.skip}</a>
+
+  <!-- The firefly that guides you down the page, and lights each part as it arrives -->
+  <!-- Night air over the whole page: gold dust and the odd petal drifting by -->
+  <canvas class="ambient" aria-hidden="true"></canvas>
+  <div class="firefly" aria-hidden="true"><span class="ff-glow"></span><span class="ff-core"></span></div>
+
+  <header class="site-header">
+    <nav class="nav" aria-label={t.nav.label}>
+      <a class="brand" href={home} aria-label={t.nav.home}>
+        <img src="/media/v4/mark.webp" alt="" width="26" height="26" />
+        <span>Osvaldo</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#about">{t.nav.about}</a></li>
+        <li><a href="#skills">{t.nav.skills}</a></li>
+        <li><a href="#work">{t.nav.work}</a></li>
+        <li><a href="#journey">{t.nav.journey}</a></li>
+        <li><a class="nav-turn" href="#your-turn">{t.nav.turn}</a></li>
+      </ul>
+      <div class="toggles">
+        <a class="round lang-link" href={other} hreflang={lang === "en" ? "es" : "en"} lang={lang === "en" ? "es" : "en"} aria-label={t.toggles.langLabel}>{t.toggles.lang}</a>
+        <button class="round theme-toggle" type="button" aria-pressed="false" aria-label={t.toggles.toNight}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle class="sun" cx="12" cy="12" r="5" /><path class="moon" d="M15.5 3.5a8.5 8.5 0 1 0 5 15 7 7 0 0 1-5-15z" /></svg>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- HERO: a pencil sketch that lights up into the painting -->
+    <section class="hero" id="top" data-light aria-labelledby="hero-title">
+      <div class="hero-media" aria-hidden="true">
+        <div class="hero-depth">
+          <picture>
+            <source media="(max-width: 760px)" srcset="/media/v4/hero-sm.webp" />
+            <img class="hero-paint" src="/media/v4/hero.webp" alt="" width="2400" height="1357" fetchpriority="high" />
+          </picture>
+          <picture>
+            <source media="(max-width: 760px)" srcset="/media/v4/hero-sm-sketch.webp" />
+            <img class="hero-sketch" src="/media/v4/hero-sketch.webp" alt="" width="2400" height="1357" />
+          </picture>
+        </div>
+        <div class="beam"></div>
+        <canvas class="bokeh"></canvas>
+        <div class="fx"></div>
+        <div class="hero-veil"></div>
+      </div>
+      <div class="hero-copy">
+        <p class="hero-hi">{t.hero.hi}</p>
+        <h1 class="hero-title" id="hero-title">{t.hero.name}</h1>
+        <p class="hero-sub">{t.hero.sub}</p>
+        <div class="hero-actions">
+          <a class="btn btn-glow" href="#work">{t.hero.work}</a>
+          <a class="btn btn-line" href="#your-turn">{t.hero.add}</a>
+        </div>
+        <p class="hero-count">
+          <img src="/media/v4/mark.webp" alt="" width="22" height="22" />
+          <span><strong class="chain-count">1</strong> <span class="chain-count-label" data-one={t.msg.one} data-many={t.msg.many}>{t.msg.many}</span> {t.hero.countTail}</span>
+        </p>
+        <p class="hand hero-note" aria-hidden="true">{t.hero.poem}</p>
+      </div>
+      <p class="petal-hint hand" aria-hidden="true">{t.hero.petalHint}</p>
+      <a class="hero-hint hand" href="#your-turn">
+        <span>{t.hero.hint}</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15m0 0-6-6m6 6 6-6" /></svg>
+      </a>
+    </section>
+
+    <!-- ABOUT: the azalea is sketched while you read, then the firefly lights it -->
+    <section class="section about reveal" id="about" data-light aria-labelledby="about-title">
+      <div class="wrap about-grid">
+        <div class="about-copy">
+          <h2 class="title" id="about-title">{t.about.title}</h2>
+          <p class="lead">{t.about.lead}</p>
+          <p>{t.about.p2}</p>
+          <p>{t.about.p3}</p>
+          <p class="note hand">{t.about.note}</p>
+        </div>
+        <figure class="bloom lightable" aria-hidden="true">
+          <img class="sb-sketch" src="/media/v4/azalea-sketch.webp" alt="" width="900" height="900" loading="lazy" />
+          <img class="sb-paint" src="/media/v4/azalea.webp" alt="" width="900" height="900" loading="lazy" />
+          <span class="bloom-glow"></span>
+        </figure>
+      </div>
+    </section>
+
+    <!-- SKILLS: loose pencil strokes come together into a bouquet; every flower is a skill -->
+    <section class="section skills reveal" id="skills" data-light aria-labelledby="skills-title">
+      <div class="wrap skills-grid">
+        <div class="skills-copy">
+          <h2 class="title" id="skills-title">{t.skills.title}</h2>
+          <p class="intro">{t.skills.intro}</p>
+          <div class="skill-groups">
+            {bouquet.map((g, gi) => (
+              <div class="skill-group" data-g={gi}>
+                <h3><span class="dot" aria-hidden="true"></span>{g.name}</h3>
+                <ul class="tags">{g.items.map((x) => <li>{x}</li>)}</ul>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div class="bouquet-wrap" aria-hidden="true">
+          <svg class="bouquet" viewBox="0 20 600 560">
+            {bouquet.map((g, gi) => (
+              <g class="stem-group" data-g={gi}>
+                <path class="stroke stem" d={g.stem} />
+                <path class="stroke leaf" d={g.leaf} />
+                {g.blooms.map((b) => (
+                  <g class="sk" data-name={b.name}>
+                    <path class="stroke petals" d={b.d} />
+                    <circle class="core" cx={b.x.toFixed(1)} cy={b.y.toFixed(1)} r={(b.r * 0.24).toFixed(1)} />
+                  </g>
+                ))}
+              </g>
+            ))}
+            <path class="stroke ribbon" d="M280,498 C290,482 320,482 330,498 C320,514 290,514 280,498 Z M300,506 L284,550 M312,506 L328,552" />
+          </svg>
+          <p class="sk-label hand" hidden></p>
+          {bouquet.map((g, gi) => (
+            <p class={`hand group-note gn-${gi}`}>{g.name}</p>
+          ))}
+          <p class="hand skills-hint">{t.skills.hint}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPERIENCE AND WORK: pages from a sketchbook, each with a pressed flower -->
+    <section class="section notebook reveal" id="work" data-light aria-labelledby="work-title">
+      <div class="wrap">
+        <h2 class="title" id="exp-title">{t.experience.title}</h2>
+        <article class="page-card page-wide">
+          <svg class="page-edge" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d={EDGE} /></svg>
+          <div class="entry">
+            <p class="entry-when hand">{t.experience.when}</p>
+            <div>
+              <h3>{t.experience.role}</h3>
+              <p class="entry-org"><a class="link" href="https://mbqinc.com/" target="_blank" rel="noopener">{t.experience.company}</a></p>
+              <p>{t.experience.body}</p>
+              <ul class="tags small" aria-label={t.experience.toolsLabel}>{t.experience.tools.map((x) => <li>{x}</li>)}</ul>
+            </div>
+          </div>
+        </article>
+
+        <h2 class="title work-title" id="work-title">{t.work.title}</h2>
+        <div class="projects">
+          {t.work.projects.map((p, i) => (
+            <article class={`page-card project ${i === 0 ? "project-lead" : ""}`}>
+              <svg class="page-edge" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d={EDGE} /></svg>
+              <p class="page-no" aria-hidden="true"><span class="cap">{String(i + 1).padStart(2, "0")}</span></p>
+              <img class="pressed" src={`/media/v4/${pressed[i % 3]}.webp`} alt="" width="520" height="520" loading="lazy" aria-hidden="true" />
+              {i === 0 && <p class="badge hand" aria-hidden="true">{t.work.seal[0]} {t.work.seal[1]}</p>}
+              <h3>{p.name}</h3>
+              <p class="project-where">{p.where}</p>
+              <p>{p.body}</p>
+              <p class="project-stack"><strong>{t.work.stackLabel}:</strong> {p.stack}</p>
+              <a class="link" href={p.url} target="_blank" rel="noopener">{t.work.code}</a>
+            </article>
+          ))}
+        </div>
+        <h3 class="subhead">{t.work.learnTitle}</h3>
+        <ul class="learn">
+          {t.work.learn.map((l) => <li class="rise"><strong>{l.strong}</strong> {l.text}</li>)}
+        </ul>
+      </div>
+    </section>
+
+    <!-- JOURNEY: a stem grows toward the light; every step is a seed that opens into a flower -->
+    <section class="journey reveal" id="journey" data-light aria-labelledby="journey-title">
+      <figure class="journey-branch lightable" aria-hidden="true">
+        <img class="sb-sketch" src="/media/v4/branch-white-sketch.webp" alt="" width="900" height="1200" loading="lazy" />
+        <img class="sb-paint" src="/media/v4/branch-white.webp" alt="" width="900" height="1200" loading="lazy" />
+      </figure>
+      <div class="wrap journey-wrap">
+        <h2 class="title" id="journey-title">{t.journey.title}</h2>
+        <p class="intro journey-intro">{t.journey.intro}</p>
+        <div class="track">
+          <svg class="track-line" aria-hidden="true" preserveAspectRatio="none"><path class="track-path" /></svg>
+          <ol class="milestones">
+            {t.journey.items.map((m) =>
+              "year" in m && m.year ? (
+                <li class="year" aria-hidden="true"><span>{m.year}</span></li>
+              ) : (
+                <li class={`milestone ${m.night ? "night" : ""} ${m.spark ? "spark" : ""} ${m.now ? "now" : ""}`}>
+                  <svg class="bud" viewBox="-20 -20 40 40" aria-hidden="true"><path class="bud-shape" d={SEED} data-bloom={BLOOM} /><circle class="bud-core" r="3.2" /></svg>
+                  <p class="m-date">{m.date}</p>
+                  <h3>{m.title}</h3>
+                  <p>{m.text}{m.badges && <> <a class="link" href="https://www.credly.com/users/osvaldo-casimiro-zamora" target="_blank" rel="noopener">{t.journey.badges}</a></>}</p>
+                  {m.now && <p class="hand now-note">{t.journey.nowNote}</p>}
+                </li>
+              )
+            )}
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- STORY: a jar of fireflies that lights when you open it -->
+    <section class="section story reveal" data-light aria-labelledby="story-title">
+      <div class="wrap story-wrap">
+        <h2 class="visually-hidden" id="story-title">{t.story.title}</h2>
+        <svg class="jar" viewBox="0 0 120 150" aria-hidden="true">
+          <path class="stroke jar-glass" d="M38,22 L82,22 L80,34 C100,42 104,62 104,86 C104,122 92,142 60,142 C28,142 16,122 16,86 C16,62 20,42 40,34 Z" />
+          <path class="stroke jar-lid" d="M34,12 L86,12 L86,22 L34,22 Z" />
+          <path class="stroke jar-shine" d="M30,70 C28,90 30,108 38,122" />
+          {[[48, 92], [72, 78], [60, 112], [80, 108], [42, 118], [66, 56]].map(([x, y], i) => (
+            <circle class="jar-fly" cx={x} cy={y} r="3" style={`--i:${i}`} />
+          ))}
+        </svg>
+        <p class="hand story-hint rise">{t.story.hint}</p>
+        <button class="btn btn-line btn-story rise" type="button" aria-expanded="false" aria-controls="story-body">{t.story.button}</button>
+        <div class="story-body" id="story-body" hidden>
+          {t.story.paragraphs.map((p) => <p>{p}</p>)}
+          <p class="story-close hand">{t.story.close}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- YOUR TURN: the endless meadow. Every visitor plants a flower -->
+    <section class="garden reveal" id="your-turn" data-light aria-labelledby="turn-title">
+      <div class="wrap garden-head">
+        <p class="hand turn-kicker">{t.turn.kicker}</p>
+        <h2 class="turn-title" id="turn-title">{t.turn.title}</h2>
+        <p class="intro turn-intro">{t.turn.intro}</p>
+      </div>
+
+      <div class="meadow" role="group" aria-label={t.turn.treeLabel}>
+        <canvas class="meadow-canvas" aria-hidden="true"></canvas>
+        <p class="meadow-read" aria-live="polite" hidden></p>
+        <button class="round meadow-nav meadow-prev" type="button" aria-label={t.turn.prev}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
+        <button class="round meadow-nav meadow-next" type="button" aria-label={t.turn.next}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg></button>
+        <p class="meadow-hint hand">{t.turn.read}</p>
+        <ol class="meadow-list visually-hidden"></ol>
+      </div>
+
+      <div class="wrap garden-body">
+        <form class="chain-form" novalidate>
+          <div class="field">
+            <label for="chain-name">{t.turn.name}</label>
+            <input id="chain-name" name="name" type="text" maxlength="24" autocomplete="given-name" required placeholder={t.turn.namePh} />
+          </div>
+          <fieldset class="field">
+            <legend>{t.turn.legend}</legend>
+            <div class="chips">
+              {presets.map((k, i) => (
+                <label class="chip"><input type="radio" name="action" value={k} checked={i === 0} /><span>{t.actions[k]}</span></label>
+              ))}
+              <label class="chip chip-own"><input type="radio" name="action" value="custom" /><span>{t.actions.custom}</span></label>
+            </div>
+          </fieldset>
+          <div class="field custom-field" hidden>
+            <label for="chain-custom">{t.turn.custom}</label>
+            <input id="chain-custom" name="custom" type="text" maxlength="80" placeholder={t.turn.customPh} aria-describedby="custom-help" />
+            <p class="field-help" id="custom-help"><span class="custom-count">0</span>{t.turn.help}</p>
+          </div>
+          <div class="form-foot">
+            <button class="btn btn-glow" type="submit">{t.turn.submit}</button>
+            <p class="form-status" role="status" aria-live="polite"></p>
+          </div>
+        </form>
+        <div class="meadow-side">
+          <p class="tree-caption"><strong class="chain-count">1</strong> <span class="chain-count-label" data-one={t.msg.one} data-many={t.msg.many}>{t.msg.many}</span> {t.turn.caption}</p>
+          <p class="tree-pond hand" hidden data-text={t.turn.more}></p>
+          <!-- A preview of the visitor's flower: a sketch that lights up as they write their name -->
+          <figure class="flower-preview" aria-hidden="true">
+            <div class="fp-art">
+              <img class="fp-sketch" src="/media/v4/cosmos-pink-sketch.webp" alt="" width="520" height="520" loading="lazy" />
+              <img class="fp-paint" src="/media/v4/cosmos-pink.webp" alt="" width="520" height="520" loading="lazy" />
+            </div>
+            <figcaption>
+              <p class="hand fp-kicker">{t.turn.preview}</p>
+              <b class="fp-name" data-empty={t.turn.name}>{t.turn.name}</b>
+              <span class="fp-text">{t.actions.thank}</span>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" data-light>
+    <svg class="grass" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,120 L0,86 C40,70 50,40 62,18 C66,46 70,70 92,84 C110,60 118,34 132,8 C136,44 146,70 170,88 C190,70 200,50 214,30 C218,56 228,76 252,90 C276,66 286,40 300,14 C304,48 316,74 340,86 C362,64 372,44 386,24 C392,56 404,78 428,88 C450,70 462,46 476,20 C480,52 492,76 516,90 C540,68 550,42 566,12 C570,46 582,72 606,86 C628,66 640,44 654,26 C660,56 670,78 694,88 C716,68 728,42 742,16 C746,50 758,74 782,88 C804,66 816,46 830,22 C836,54 846,76 870,88 C892,68 904,40 918,10 C922,46 934,72 958,86 C980,64 992,44 1006,24 C1012,56 1022,78 1046,90 C1068,70 1080,44 1094,18 C1098,50 1110,74 1134,86 C1156,66 1168,46 1182,26 C1188,56 1194,76 1200,82 L1200,120 Z" />
+    </svg>
+    <div class="wrap footer-inner">
+      <div>
+        <h2 class="footer-title">{t.footer.title}</h2>
+        <p>{t.footer.text}</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/Osvxldx" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://www.linkedin.com/in/osvaldo-casimiro-zam/" target="_blank" rel="noopener">LinkedIn</a></li>
+        <li><a href="https://builder.aws.com/community/@osvxldx" target="_blank" rel="noopener">AWS Builder Center</a></li>
+        <li><a href="mailto:osvalo.zamo@gmail.com">{t.footer.email}</a></li>
+      </ul>
+      <p class="footer-fine">{t.footer.fine}</p>
+    </div>
+  </footer>
+
+  <script type="application/json" id="runtime" set:html={JSON.stringify(runtime)}></script>
+  <script>
+    import "../scripts/app.ts";
+  </script>
+</Base>

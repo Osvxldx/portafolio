@@ -1,0 +1,50 @@
+---
+import "@fontsource/cormorant-infant/latin-400.css";
+import "@fontsource/cormorant-infant/latin-400-italic.css";
+import "@fontsource/cormorant-infant/latin-600.css";
+import "@fontsource/figtree/latin-400.css";
+import "@fontsource/figtree/latin-500.css";
+import "@fontsource/figtree/latin-600.css";
+import "@fontsource/gochi-hand/latin-400.css";
+import "../styles/global.css";
+import type { Content } from "../i18n/content";
+
+interface Props { t: Content; path: string; altPath: string }
+const { t, path, altPath } = Astro.props;
+---
+<!doctype html>
+<html lang={t.lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{t.meta.title}</title>
+    <meta name="description" content={t.meta.description} />
+    <meta property="og:title" content={t.meta.title} />
+    <meta property="og:description" content={t.meta.description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/media/v4/og.jpg" />
+    <meta name="theme-color" content="#0A0C10" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" hreflang="en" href="/" />
+    <link rel="alternate" hreflang="es" href="/es/" />
+    <link rel="preload" as="image" href="/media/v4/hero.webp" media="(min-width: 761px)" fetchpriority="high" />
+    <link rel="preload" as="image" href="/media/v4/hero-sm.webp" media="(max-width: 760px)" fetchpriority="high" />
+    <!-- Theme and motion are set before paint so nothing flashes.
+         ?theme=light|dark previews a theme; ?motion=full shows motion even when reduced motion is on. -->
+    <script is:inline>
+      (function () {
+        var d = document.documentElement, saved = null;
+        try { saved = localStorage.getItem("theme"); } catch (e) {}
+        var forced = (location.search.match(/[?&]theme=(light|dark)\b/) || [])[1];
+        // Night is the default look; day is the alternative.
+        d.setAttribute("data-theme", forced || saved || "dark");
+        if (!/[?&]motion=full\b/.test(location.search) && matchMedia("(prefers-reduced-motion: reduce)").matches) d.classList.add("calm");
+        d.classList.add("js");
+      })();
+    </script>
+    <script is:inline src="/config.js"></script>
+  </head>
+  <body data-path={path} data-alt={altPath}>
+    <slot />
+  </body>
+</html>

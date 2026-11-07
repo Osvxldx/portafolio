@@ -1,9 +1,46 @@
-# Local tooling and private notes (not part of the site)
+# build output
+dist/
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+# jetbrains setting folder
+.idea/
+
+# Working files and earlier versions (not part of the site)
+media-src/
+portafolio 1/
+portafolio 2/
+portafolio 3/
 .claude/
+.agents/
+skills-lock.json
 GUIA-DESPLIEGUE.md
 HACKATHON-SUBMISSION.md
 PASOS-FINALES.md
 plan.md
-node_modules/
-.DS_Store
 Thumbs.db
+
+# More local working files (not part of the site)
+proyecto3/
+referencias/
+.taste-skill/
+NUEVO-CHAT-portafolio-3.md
+mock-api.mjs
+pnpm-lock.yaml
